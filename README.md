@@ -38,6 +38,12 @@ Initial TalkFolio data should be migrated from:
 
 The per-talk notes are especially valuable for abstracts, elevator pitches, audience notes, outlines, alternate titles, and rough ideation material.
 
+## Additional Docs
+
+- [TalkFolio Context](CONTEXT.md)
+- [TalkFolio Integration Strategy](docs/Integration-Strategy.md)
+- [TalkFolio Schema Direction](docs/TalkSchema.md)
+
 ## Status
 
 Documentation-first repository. Domain model and schemas are not yet implemented.
