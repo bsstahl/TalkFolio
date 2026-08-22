@@ -4,6 +4,10 @@ TalkFolio is the SpeakerOps bounded context for managing talks as concepts, inde
 
 It owns the speaking portfolio: talk titles, proposal language, audience fit, topic classification, and the PresentationFamily grouping used to identify talks that are fundamentally the same idea or marketing variant.
 
+## Code of Conduct
+
+All contributors and users are expected to follow the [Strict Accountability Policy](CODE_OF_CONDUCT.md).
+
 ## Responsibilities
 
 TalkFolio owns:
