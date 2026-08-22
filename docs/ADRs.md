@@ -60,3 +60,68 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 **Rationale:** `|-` preserves exact line breaks as authored, avoiding unexpected whitespace folding in notes and proposal copy.
 
 **Consequences:** All examples in the schema docs (`ProposalCopyItems.Copy`, `RelatedContent.Notes`, `IdeationNotes`, `PresentationFamily.Notes`) use `|-`.
+
+## ADR-005: Talk IDs use GUIDs
+
+**Status:** Decided
+
+**Decision:** All Talk-level identifiers use GUIDs for `Id` values. The human-readable title remains available as a separate field for display and discovery, and there is no requirement for a slug or URL-derived ID.
+
+**Rationale:** The repository already treats the title as the human-facing value, and there is not always an external URL to derive a canonical identifier from. A GUID is a stable internal identity without adding a redundant slug or URL field.
+
+**Consequences:** `Id` remains the canonical database identity. `Title` is the user-facing value; no slug field is required for the initial schema.
+
+## ADR-006: Tags are free-form string tokens constrained to alphanumerics and dash
+
+**Status:** Decided
+
+**Decision:** `Tags` are free-form strings, but each tag value is constrained to alphanumerics and `-` only; whitespace is not allowed.
+
+**Rationale:** This keeps tags flexible enough to evolve naturally while preserving a consistent, easy-to-query token format.
+
+**Consequences:** Tag examples such as `graph-rag`, `sports-analytics`, and `software-engineering` are valid; values such as `graph rag` or `AI Systems` are not.
+
+## ADR-007: Category uses a controlled, extensible list
+
+**Status:** Decided
+
+**Decision:** `Category` is a controlled list that can expand over time as the domain grows. The list is not fixed forever, but it is curated and intentionally not a deeply nested taxonomy.
+
+**Rationale:** The initial categories are broad and stable, but TalkFolio needs room to add new categories over time without redesigning the model.
+
+**Consequences:** Category values remain coarse and discovery-oriented; nuance stays in `Tags` rather than in nested category trees.
+
+## ADR-008: TargetAudience uses a controlled, extensible list of strings
+
+**Status:** Decided
+
+**Decision:** `TargetAudience` remains a list of strings, but the list is drawn from a controlled vocabulary that can expand over time. It is not modeled as a nested object unless the repo later decides it needs richer segmentation.
+
+**Rationale:** The current requirement is simple audience identification rather than advanced targeting metadata. Keeping this as a string list reduces schema complexity while still allowing a curated vocabulary to grow.
+
+**Consequences:** Audience values are human-readable and consistent, while future segmentation can be introduced without rewriting the core model.
+
+## ADR-009: Extra talk metadata flags use a flexible key-value map
+
+**Status:** Decided
+
+**Decision:** Additional talk-specific flags are stored in a flexible `Flags` map, keyed by name (for example `Locked`, `ForKids`, `HandsOn`) and valued as booleans or other lightweight scalars as needed.
+
+**Rationale:** This keeps the model open-ended without forcing all possible flags into schema fields up front. It preserves the ability to add flags as the domain grows while keeping the flags clearly associated with the Talk rather than with a deck.
+
+**Consequences:** The `Flags` field is the extension point for future talk-level metadata, while `Summary`, `Status`, and other lifecycle metadata remain outside this model unless a later decision adds them explicitly.
+
+## ADR-010: Only narrative context fields remain unstructured
+
+**Status:** Decided
+
+**Decision:** TalkFolio keeps the model structured wherever reasonable. The only intentionally unstructured Talk fields are the narrative/context fields used for authored prose and commentary:
+
+- `ProposalCopyItems[].Copy`
+- `IdeationNotes`
+- `PresentationFamily.Notes`
+- `RelatedContent[].Notes`
+
+**Rationale:** Structured fields improve consistency, filtering, and downstream tooling. The remaining prose fields exist specifically to preserve authored language, explanatory context, and editorial notes that do not fit cleanly into a rigid structure.
+
+**Consequences:** New talk data should default to structured fields unless it is clearly narrative or explanatory prose.

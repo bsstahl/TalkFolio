@@ -80,9 +80,14 @@ Expected migration mapping:
 ## Decisions Made
 
 - Should proposal copy be stored inline in Talk records or as separate markdown files? See [ADR-001](ADRs.md#adr-001-proposal-copy-is-stored-inline-as-a-typed-array).
+- Should Talk identities be GUIDs, slugs, or both? See [ADR-005](ADRs.md#adr-005-talk-ids-use-guids).
+- Should Tags be controlled by a repo-local vocabulary file or free-form strings? See [ADR-006](ADRs.md#adr-006-tags-are-free-form-string-tokens-constrained-to-alphanumerics-and-dash).
+- Should Category remain fixed, or be a controlled list that can expand? See [ADR-007](ADRs.md#adr-007-category-uses-a-controlled-extensible-list).
+- Should TargetAudience be structured or a list of strings? See [ADR-008](ADRs.md#adr-008-targetaudience-uses-a-controlled-extensible-list-of-strings).
+- How should extra talk metadata flags be modeled? See [ADR-009](ADRs.md#adr-009-extra-talk-metadata-flags-use-a-flexible-key-value-map).
+- Which fields should remain unstructured? See [ADR-010](ADRs.md#adr-010-only-narrative-context-fields-remain-unstructured).
+- How much of the existing `bss-notes` prose should remain freeform versus structured? See [ADR-010](ADRs.md#adr-010-only-narrative-context-fields-remain-unstructured).
 
 ## Open Questions
 
-- Should Talk identities be GUIDs, slugs, or both?
-- Should Tags be controlled by a repo-local vocabulary file?
-- How much of the existing `bss-notes` prose should remain freeform versus structured?
+- None at this time.

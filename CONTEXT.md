@@ -4,12 +4,14 @@ Glossary-only domain language for TalkFolio. This file records canonical terms a
 
 ## Term: Talk
 Definition: A speakable concept, independent of any specific slide deck, conference submission, or delivery event.
-Owns: title, abstract, pitch language, target audience, tags, category, PresentationFamily membership, concept lifecycle, and references to built decks.
+Owns: title, proposal copy, target audience, tags, category, PresentationFamily membership, concept lifecycle, talk-level flags, and references to built decks or companion material.
 Distinguish from: LiquidVictor SlideDeck, TalkCircuit Submission, SlideFed PresentationSession.
 Invariants:
 - A Talk may exist before any deck exists.
 - A Talk may reference zero or more LiquidVictor `SlideDeck.Id` values.
 - A Talk may have multiple alternate titles or marketing variants.
+- `Id` values are GUIDs.
+- Talk-level flags are stored in a flexible `Flags` key-value map.
 
 ## Term: Category
 Definition: A single top-level topic grouping used as the starting point for browsing and CFP selection.
@@ -17,6 +19,7 @@ Values: Agile, Algorithms, Language Models, Leadership & Community, Software Eng
 Invariants:
 - Exactly one Category per Talk.
 - Category is intentionally coarse.
+- Category is maintained as a controlled list that can expand over time.
 - Cross-cutting topic nuance belongs in Tags, not nested category trees.
 
 ## Term: Tags
@@ -24,7 +27,22 @@ Definition: A many-to-many set of topical labels used for discovery, CFP fit, an
 Invariants:
 - A Talk may have any number of Tags.
 - Tags should capture overlap that a single Category cannot.
+- Tags are free-form strings constrained to alphanumerics and `-` with no whitespace.
 - Conference-specific tag mapping is not owned here; TalkCircuit maps TalkFolio Tags to a conference's allowed vocabulary.
+
+## Term: TargetAudience
+Definition: The intended audience for the Talk, expressed as a set of human-readable values from the TalkFolio vocabulary.
+Invariants:
+- A Talk may have zero or many TargetAudience values.
+- TargetAudience values are strings drawn from a controlled list that can expand over time.
+- This is intentionally simpler than a deeply structured audience model unless the repo later decides to add richer segmentation.
+
+## Term: Flags
+Definition: A flexible map of talk-level metadata flags.
+Invariants:
+- Each flag is a key-value pair.
+- The map is intended for extension without changing the core talk schema.
+- Examples include `Locked`, `ForKids`, and `HandsOn`.
 
 ## Term: PresentationFamily
 Definition: A grouping of Talks or variants that are fundamentally the same presentation idea with different branding, format, or emphasis.
@@ -51,6 +69,7 @@ Examples: abstract, short version, elevator pitch, memo to selection committee, 
 Invariants:
 - Proposal copy belongs to TalkFolio, even when it is later submitted through TalkCircuit.
 - Conference-specific submitted versions may be captured by TalkCircuit as submission snapshots.
+- ProposalCopyItems.Copy is intentionally unstructured prose; all other fields should be structured unless they are explicitly narrative/context fields.
 
 ## Term: SlideDeckIds
 Definition: References from a Talk to one or more built LiquidVictor decks.

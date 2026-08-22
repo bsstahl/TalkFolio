@@ -31,7 +31,6 @@ A Talk is a speakable concept independent of any specific deck, conference, or d
 
 ```yaml
 Id: 6c8d4d27-9cc7-4c41-9bf8-19e55758e7cc
-Slug: rag-deep-dive
 Title: RAG Deep Dive
 AlternateTitles:
   - Harnessing the Power of Retrieval-Augmented Generation
@@ -59,9 +58,13 @@ ProposalCopyItems:
     Copy: |-
       A practical tour of the architecture, the failure modes, and the design tradeoffs.
 TargetAudience:
-  - Software engineers building AI-enabled applications
-  - Architects designing enterprise knowledge systems
-  - Technical leaders evaluating AI adoption patterns
+  - software-engineers
+  - architects
+  - technical-leaders
+Flags:
+  Locked: false
+  ForKids: false
+  HandsOn: true
 SlideDeckIds:
   - 70b739b6-8dcb-43da-adc8-7392abf9a6ef
 PublicPresentationReferences:
@@ -96,15 +99,15 @@ UpdatedAt: 2026-08-21T00:00:00Z
 The current best-fit set of core fields is:
 
 - Id: GUID
-- Slug: stable URL-safe identifier
 - Title: canonical title
 - AlternateTitles: list of marketing or branding variants
-- Category: coarse top-level selection bucket
-- Tags: topic labels for overlap and CFP matching
-- PresentationFamily: family membership object with `Id` (grouping key for near-duplicate variants) and `Variant` (this talk's role within the family, for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`)
+- Category: coarse top-level selection bucket from a controlled list that can expand over time
+- Tags: topic labels for overlap and CFP matching; free-form strings constrained to alphanumerics and `-`
+- PresentationFamily: family membership object with `Id` and `Variant` (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`)
 - LifecycleStatus: concept-level state
 - ProposalCopyItems: typed array of inline proposal copy blocks, each with `Type` and `Copy` (`|-` literal block)
-- TargetAudience: list of audience descriptors
+- TargetAudience: list of audience descriptors drawn from a controlled list that can expand over time
+- Flags: optional key-value map for talk-level metadata flags such as `Locked`, `ForKids`, or `HandsOn`
 - SlideDeckIds: list of LiquidVictor `SlideDeck.Id` values
 - PublicPresentationReferences: optional links to SlideFed or publication resources
 - RelatedContent: typed list of companion content references (`Type`, `Title`, optional `Url`, `Notes`)
@@ -128,6 +131,7 @@ Current candidate values:
 - user should be able to filter by a broad topic at a glance
 - most CFPs only need broad topical grouping
 - nuance belongs in Tags, not nested taxonomy branches
+- the list is controlled by the repo but can expand over time as new categories emerge
 
 ## Tags
 
@@ -135,9 +139,10 @@ Tags are the main mechanism for overlap, cross-cutting classification, and CFP m
 
 ### Proposed rules
 
-- Tags are user-defined or repo-managed strings, not a deeply nested classification tree.
+- Tags are free-form strings, not a deeply nested classification tree.
 - A Talk may have many Tags.
 - Tags capture overlap that a single Category cannot express.
+- Tag values are constrained to alphanumerics and `-` only, with no whitespace.
 - Conference submission systems may map TalkFolio Tags to a conference's fixed vocabulary.
 
 ### Examples
@@ -306,70 +311,30 @@ Rules:
 - SlideFed owns the public resource and its publication lifecycle
 - TalkFolio only references it for display or cataloging
 
-## Open Questions / Pending Decisions
+## Resolved Decisions
 
-These are the design questions that still need a decision before implementation:
+The following decisions are now settled for TalkFolio:
 
-### 1. ID strategy
-
-Should Talk identity be:
-
-- GUID only
-- slug + GUID
-- both slug and GUID
-
-Current preference: both, with GUID as the canonical database identity and slug as a human-readable lookup value.
-
-### 2. Tag source of truth
-
-Should Tags be:
-
-- fully freeform strings
-- a repo-local controlled vocabulary
-- a mix of controlled vocabulary + freeform additions
-
-Current preference: repo-local controlled vocabulary, with a lightweight alias/mapping layer for specific conference tag sets.
-
-### 3. Category model
-
-Should Category remain a fixed enum or become a controlled list that can evolve over time?
-
-Current preference: fixed enum initially, with a clear path to expand later if the domain grows.
-
-### 4. Audience model
-
-Should TargetAudience be a list of strings or a structured object such as:
-
-```yaml
-TargetAudience:
-  - role: engineer
-    level: intermediate
-    note: people building AI systems in production
-```
-
-Current preference: list of strings initially, with structure added only if the repo decides to support more advanced audience segmentation later.
-
-### 5. Extra talk metadata flags
-
-The earlier design discussions raised flags such as:
-
-- Locked
-- ForKids
-- HandsOn
-
-These are not yet clearly placed. The current instinct is that they are talk-level metadata rather than deck-structure metadata, but this should be validated before implementation.
+- Talk identity uses GUIDs for `Id` values. See [ADR-005](ADRs.md#adr-005-talk-ids-use-guids).
+- Tags are free-form strings, constrained to alphanumerics and `-` to keep the data clean and consistent. See [ADR-006](ADRs.md#adr-006-tags-are-free-form-string-tokens-constrained-to-alphanumerics-and-dash).
+- Category is a controlled list that can expand over time. See [ADR-007](ADRs.md#adr-007-category-uses-a-controlled-extensible-list).
+- TargetAudience is a list of strings drawn from a controlled list that can expand over time. See [ADR-008](ADRs.md#adr-008-targetaudience-uses-a-controlled-extensible-list-of-strings).
+- Talk-level flags are modeled as a flexible key-value `Flags` map. See [ADR-009](ADRs.md#adr-009-extra-talk-metadata-flags-use-a-flexible-key-value-map).
+- Only narrative context fields remain intentionally unstructured. See [ADR-010](ADRs.md#adr-010-only-narrative-context-fields-remain-unstructured).
 
 ## Current Recommendation
 
 The working baseline for the first TalkFolio implementation is:
 
-- Talk entity with GUID + slug + canonical fields
-- fixed Category enum
-- Tags as a list of strings or repo vocabulary entries
-- PresentationFamily as a separate grouping entity, with the Talk owning membership via a nested `PresentationFamily` object (`Id` + `Variant`)
+- Talk entity with GUID `Id` and canonical field set
+- controlled-but-extensible Category list
+- Tags as free-form, hyphen-safe strings
+- presentation family with the Talk owning membership via a nested `PresentationFamily` object (`Id` + `Variant`)
 - concept lifecycle of Ideation | Active | Retired
 - references to SlideDeckIds and optional public publication references
 - proposal copy stored inline as `ProposalCopyItems` (typed items with `|-` literal-block copy)
 - companion material referenced via `RelatedContent` (typed, talk-level, lightweight references)
+- flexible talk-level flags via `Flags`
+- unstructured prose limited to `ProposalCopyItems[].Copy`, `IdeationNotes`, `PresentationFamily.Notes`, and `RelatedContent[].Notes`
 
 This gives a clean, minimal schema that matches the domain boundary without pulling in deck-building or submission-state concerns.
