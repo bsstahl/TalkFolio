@@ -44,7 +44,17 @@ Rules:
 
 - TalkCircuit owns submission and booking state.
 - TalkCircuit may snapshot proposal copy at submission time, because submitted wording can diverge from the current catalog text.
-- TalkCircuit enforces the rule that two Talks from the same PresentationFamily are not submitted to the same conference.
+- TalkCircuit enforces the rule that two Talks from the same PresentationFamily are not submitted to the same conference, finding a talk's family members by querying Talks that share its `PresentationFamily.Id`.
+
+## Related Content
+
+TalkFolio stores lightweight references to companion material (blog posts, videos, articles, essays, notebooks, and similar) via the Talk's `RelatedContent` collection.
+
+Rules:
+
+- RelatedContent is associated with the Talk concept, not with a specific LiquidVictor deck.
+- Some associated material lives outside the TalkFolio repo (for example, blog posts in CognitiveInheritance) and is still linked from the Talk by type, title, URL, and notes.
+- The owning domain retains the content lifecycle; TalkFolio never models publication state, summaries, or dates for related content.
 
 ## Migration Sources
 
@@ -67,9 +77,12 @@ Expected migration mapping:
 | Other possible titles | Alternate titles |
 | Rough notes / TODOs | Ideation notes |
 
-## First Implementation Questions
+## Decisions Made
+
+- Should proposal copy be stored inline in Talk records or as separate markdown files? See [ADR-001](ADRs.md#adr-001-proposal-copy-is-stored-inline-as-a-typed-array).
+
+## Open Questions
 
 - Should Talk identities be GUIDs, slugs, or both?
 - Should Tags be controlled by a repo-local vocabulary file?
-- Should proposal copy be stored inline in Talk records or as separate markdown files referenced by the Talk?
 - How much of the existing `bss-notes` prose should remain freeform versus structured?

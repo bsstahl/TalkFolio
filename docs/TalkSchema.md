@@ -1,6 +1,6 @@
 # TalkFolio Schema Direction
 
-This document captures the current schema direction for TalkFolio, based on the SpeakerOps decisions reached so far. It is intentionally a working proposal rather than a final implementation contract.
+This document captures the current schema direction for TalkFolio, based on the SpeakerOps decisions reached so far. It is intentionally a working proposal rather than a final implementation contract. Decisions that have been finalized are recorded in [ADRs.md](ADRs.md); only open questions remain in the "Open Questions / Pending Decisions" section below.
 
 ## Scope
 
@@ -42,16 +42,22 @@ Tags:
   - retrieval
   - embeddings
   - knowledge-graph
-PresentationFamilyId: 8ccdf8b8-fd2c-4d41-9fe0-32fade0f41dc
+PresentationFamily:
+  Id: 8ccdf8b8-fd2c-4d41-9fe0-32fade0f41dc
+  Variant: Canonical
 LifecycleStatus: Active
-Abstract: >-
-  Retrieval-augmented generation is the most important architecture pattern for
-  real-world AI applications that need grounded, explainable answers.
-ElevatorPitch: >-
-  In this talk, Barry explains how RAG works in practice and why so many teams
-  struggle with retrieval quality, chunking, and evaluation.
-ShortVersion: >-
-  A practical tour of the architecture, the failure modes, and the design tradeoffs.
+ProposalCopyItems:
+  - Type: Abstract
+    Copy: |-
+      Retrieval-augmented generation is the most important architecture pattern for
+      real-world AI applications that need grounded, explainable answers.
+  - Type: ElevatorPitch
+    Copy: |-
+      In this talk, Barry explains how RAG works in practice and why so many teams
+      struggle with retrieval quality, chunking, and evaluation.
+  - Type: ShortVersion
+    Copy: |-
+      A practical tour of the architecture, the failure modes, and the design tradeoffs.
 TargetAudience:
   - Software engineers building AI-enabled applications
   - Architects designing enterprise knowledge systems
@@ -62,7 +68,23 @@ PublicPresentationReferences:
   - Source: SlideFed
     Url: https://example.com/presentation/rag-deep-dive
     PublicId: rag-deep-dive
-IdeationNotes: >-
+RelatedContent:
+  - Type: BlogPost
+    Title: RAG in Practice: Grounding Answers with Retrieval
+    Url: https://example.com/blog/rag-in-practice
+    Notes: |-
+      Companion article expanding on the retrieval patterns covered in the talk.
+  - Type: BlogPost
+    Title: Evaluating Retrieval Quality Without a Gold Dataset
+    Url: https://example.com/blog/evaluating-retrieval-quality
+    Notes: |-
+      Follow-up post on the evaluation section of the talk.
+  - Type: Video
+    Title: RAG Deep Dive — Workshop Recording
+    Url: https://example.com/videos/rag-deep-dive-workshop
+    Notes: |-
+      Recorded workshop covering the same material in a longer format.
+IdeationNotes: |-
   This talk could also be reframed as a practical architecture talk or a more
   abstract systems talk.
 CreatedAt: 2026-08-20T00:00:00Z
@@ -79,14 +101,13 @@ The current best-fit set of core fields is:
 - AlternateTitles: list of marketing or branding variants
 - Category: coarse top-level selection bucket
 - Tags: topic labels for overlap and CFP matching
-- PresentationFamilyId: grouping key for near-duplicate variants
+- PresentationFamily: family membership object with `Id` (grouping key for near-duplicate variants) and `Variant` (this talk's role within the family, for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`)
 - LifecycleStatus: concept-level state
-- Abstract: long-form descriptive summary
-- ElevatorPitch: succinct pitch language
-- ShortVersion: compressed version for quick review or CFP summaries
+- ProposalCopyItems: typed array of inline proposal copy blocks, each with `Type` and `Copy` (`|-` literal block)
 - TargetAudience: list of audience descriptors
 - SlideDeckIds: list of LiquidVictor `SlideDeck.Id` values
 - PublicPresentationReferences: optional links to SlideFed or publication resources
+- RelatedContent: typed list of companion content references (`Type`, `Title`, optional `Url`, `Notes`)
 - IdeationNotes: freeform notes for ideas not yet fully refined
 - CreatedAt / UpdatedAt: operational metadata
 
@@ -135,16 +156,27 @@ Tags are the main mechanism for overlap, cross-cutting classification, and CFP m
 
 A PresentationFamily groups talks that are materially the same core presentation but differ in branding, title, emphasis, or audience framing.
 
+### Relationship ownership
+
+The Talk owns the relationship through a nested `PresentationFamily` object:
+
+- `PresentationFamily.Id`: the family the talk belongs to
+- `PresentationFamily.Variant`: the talk's variant type within that family (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`)
+
+Grouping the two fields into one object keeps family membership cohesive rather than spreading flat fields across the Talk root. A talk with no family simply omits the object.
+
+The PresentationFamily entity does not list its members. Membership is discovered by querying Talks by `PresentationFamily.Id`, which keeps the relationship single-directional (matching the Talk → SlideDeckIds pattern) and avoids two copies of the same data drifting apart.
+
+### Canonical talks
+
+There is no `CanonicalTalkId` on the family. A family is not required to have a canonical talk at all. When one exists, "canonical" is expressed as a `PresentationFamily.Variant` value on the Talk, not as a structural field on the family.
+
 ### Proposed entity shape
 
 ```yaml
 Id: 8ccdf8b8-fd2c-4d41-9fe0-32fade0f41dc
 Name: RAG Deep Dive
-CanonicalTalkId: 6c8d4d27-9cc7-4c41-9bf8-19e55758e7cc
-TalkIds:
-  - 6c8d4d27-9cc7-4c41-9bf8-19e55758e7cc
-  - a183896a-795d-4d85-9d2d-da1b0c554f12
-Notes: >-
+Notes: |-
   This family includes both the "deep dive" and variant branding used for different audiences.
 ```
 
@@ -154,6 +186,7 @@ Notes: >-
 - It is a grouping concept, not a category hierarchy.
 - Two talks in the same PresentationFamily should not be co-submitted to the same conference.
 - TalkCircuit enforces this rule at submission time.
+- TalkCircuit can find a talk's family members by querying Talks that share its `PresentationFamily.Id`.
 
 ## LifecycleStatus
 
@@ -188,16 +221,59 @@ Proposal copy supports the speaking portfolio and CFP process. The current propo
 - AudienceNotes
 - AlternateTitleCandidates
 
-### Open decision
+### Decision
 
-The remaining question is whether proposal copy should be stored inline on each Talk record or spread across referenceable markdown files.
+Proposal copy is stored inline on the Talk record as `ProposalCopyItems`, a typed array where each item has:
 
-Current default assumption:
+- `Type`: the copy classification (for example `Abstract`, `ElevatorPitch`, `ShortVersion`, `CommitteeNotes`)
+- `Copy`: the proposal text stored as a YAML `|-` literal block
 
-- keep the primary proposal fields inline in the Talk record
-- allow markdown-heavy detail to be captured as separate files only when the content becomes large or versioned
+This keeps proposal text extensible without changing the Talk schema whenever a new copy type is introduced.
 
-This keeps the model straightforward while still allowing richer content later.
+## Related Content and Companion Material
+
+Supporting material may be associated with a talk concept even when some of it lives in another domain, such as the CognitiveInheritance blog. To keep the model generic, TalkFolio should store lightweight references to that material rather than trying to own its lifecycle or publication metadata.
+
+### Proposed shape
+
+```yaml
+RelatedContent:
+  - Type: BlogPost
+    Title: LLMs Under the Hood: What the Model Is Actually Doing
+    Url: https://example.com/blog/llms-under-the-hood
+    Notes: |-
+      Companion article for the LLMs Under the Hood talk and workshop.
+  - Type: BlogPost
+    Title: Why LLMs Hallucinate and How to Reason About That Risk
+    Url: https://example.com/blog/why-llms-hallucinate
+    Notes: |-
+      Related article on failure modes and trustworthiness.
+  - Type: Video
+    Title: LLMs Under the Hood — Deep Dive Recording
+    Url: https://example.com/videos/llms-under-the-hood
+    Notes: |-
+      Recorded version of the longer explanation.
+```
+
+### Rules
+
+- Related content is associated with the Talk concept, not with a specific built deck.
+- A Talk may have zero, one, or many related content items.
+- More than one item of the same `Type` is allowed.
+- Each item has a `Type`, a `Title`, an optional `Url`, and `Notes`.
+- There is no separate `Id` field on a related content item. When present, `Url` is the canonical identifier for the item.
+- `Notes` is the primary place for context, framing, or reason for association, stored as a `|-` literal block.
+- `Summary`, `Status`, and `PublishedAt` are intentionally not included here because those belong to the domain that actually owns the content lifecycle.
+- If some associated material lives in CognitiveInheritance or another domain outside the TalkFolio repo, the TalkFolio entry can still reference it by type, title, URL, and notes without forcing that content to be modeled as a TalkFolio-owned resource.
+
+### Usage guidance
+
+- RelatedContent is intended for discovery, navigation, and finding companion material tied to a talk — for example, surfacing the blog posts, videos, articles, essays, or notebooks that expand on a talk's subject.
+- It is a lightweight relationship model, not a content-management system or publication workflow. TalkFolio stores only the relationship and reference; the content's lifecycle (drafting, publication, updates, retirement) remains in the domain that owns that content, such as CognitiveInheritance for blog posts.
+
+### Why this belongs here
+
+This gives TalkFolio a generic, flexible way to model companion material without conflating it with deck-building or publication semantics. The content may live elsewhere, but the relationship to the Talk still belongs in TalkFolio.
 
 ## Reference Model
 
@@ -254,25 +330,13 @@ Should Tags be:
 
 Current preference: repo-local controlled vocabulary, with a lightweight alias/mapping layer for specific conference tag sets.
 
-### 3. Proposal copy layout
-
-Should proposal text be inline on the Talk record or split into separate proposal documents referenced by the Talk?
-
-Current preference: inline for the core fields, with markdown files only if a specific talk becomes very large or needs versioned copies.
-
-### 4. Family semantics
-
-Should PresentationFamily be a separate entity or a simple string field on Talks?
-
-Current preference: separate entity for clarity and future metadata, but a simplified string field may be acceptable if implementation stays lightweight.
-
-### 5. Category model
+### 3. Category model
 
 Should Category remain a fixed enum or become a controlled list that can evolve over time?
 
 Current preference: fixed enum initially, with a clear path to expand later if the domain grows.
 
-### 6. Audience model
+### 4. Audience model
 
 Should TargetAudience be a list of strings or a structured object such as:
 
@@ -285,7 +349,7 @@ TargetAudience:
 
 Current preference: list of strings initially, with structure added only if the repo decides to support more advanced audience segmentation later.
 
-### 7. Extra talk metadata flags
+### 5. Extra talk metadata flags
 
 The earlier design discussions raised flags such as:
 
@@ -302,9 +366,10 @@ The working baseline for the first TalkFolio implementation is:
 - Talk entity with GUID + slug + canonical fields
 - fixed Category enum
 - Tags as a list of strings or repo vocabulary entries
-- PresentationFamily as a separate grouping entity
+- PresentationFamily as a separate grouping entity, with the Talk owning membership via a nested `PresentationFamily` object (`Id` + `Variant`)
 - concept lifecycle of Ideation | Active | Retired
 - references to SlideDeckIds and optional public publication references
-- proposal copy stored in a compact structured form on the Talk record
+- proposal copy stored inline as `ProposalCopyItems` (typed items with `|-` literal-block copy)
+- companion material referenced via `RelatedContent` (typed, talk-level, lightweight references)
 
 This gives a clean, minimal schema that matches the domain boundary without pulling in deck-building or submission-state concerns.

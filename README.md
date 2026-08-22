@@ -43,6 +43,7 @@ The per-talk notes are especially valuable for abstracts, elevator pitches, audi
 - [TalkFolio Context](CONTEXT.md)
 - [TalkFolio Integration Strategy](docs/Integration-Strategy.md)
 - [TalkFolio Schema Direction](docs/TalkSchema.md)
+- [Architecture Decision Records](docs/ADRs.md)
 
 ## Status
 

@@ -32,6 +32,9 @@ Invariants:
 - PresentationFamily is not a taxonomy node.
 - Talks in the same PresentationFamily should not be co-submitted to the same conference.
 - TalkCircuit enforces the no-duplicate-family rule at submission time.
+- The Talk owns the family relationship via a nested `PresentationFamily` object (`Id` + `Variant`); the family entity does not list its members.
+- `Variant` identifies the talk's role in the family (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`).
+- A family is not required to have a canonical talk; when one exists, it is expressed as a `Variant` value, not a structural field on the family.
 
 ## Term: LifecycleStatus
 Definition: The concept-level state of a Talk.
@@ -61,3 +64,16 @@ Definition: Optional reference to a public or federated presentation resource ex
 Invariants:
 - This is a pointer for catalog/display purposes.
 - SlideFed owns the federated resource and its ActivityPub semantics.
+
+## Term: RelatedContent
+Definition: Companion material associated with a Talk, such as blog posts, videos, articles, essays, or notebooks, referenced for discovery, navigation, and finding material tied to a talk.
+Invariants:
+- Related content is associated with the Talk concept, not with a specific LiquidVictor SlideDeck.
+- One Talk may have zero or many RelatedContent entries.
+- More than one RelatedContent item of the same type is allowed.
+- Each item has a `Type`, a `Title`, an optional `Url`, and `Notes`.
+- A RelatedContent item has no separate `Id`; when present, `Url` is the canonical identifier.
+- `Notes` is the primary field for a brief explanation of the relationship to the talk, stored as a `|-` literal block.
+- Related content may live in another domain such as CognitiveInheritance, outside the TalkFolio repo; TalkFolio stores only the lightweight reference and relationship.
+- RelatedContent is a lightweight relationship model, not a content-management system or publication workflow; the content lifecycle remains with the domain that owns the content.
+- `Summary`, `Status`, and `PublishedAt` are intentionally not part of this concept because those belong to the domain that owns the content lifecycle.
