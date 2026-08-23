@@ -174,5 +174,4 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 
 **Rationale:** This is the conventional .NET configuration model and keeps the app behavior predictable across local development, deployed environments, and automated tests. It also preserves a clean separation between checked-in defaults, environment-specific deployment values, and test-specific overrides.
 
-**Consequences:** The data root, repository selection, and related runtime settings should all be supplied through the configuration system rather than as hard-coded constants. Test configuration can safely override files and environment variables without changing the production configuration model.
-**Consequences:** Bootstrap work must define how the configurable root is supplied and how test repositories are organized. The product cannot assume that a checked-in repo-local catalog is the default operating mode.
+**Consequences:** The data root, repository selection, and related runtime settings should all be supplied through the configuration system rather than as hard-coded constants. Bootstrap work must define how the configurable root is supplied and how test repositories are organized, and the product cannot assume that a checked-in repo-local catalog is the default operating mode.
