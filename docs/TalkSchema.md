@@ -8,20 +8,20 @@ TalkFolio owns talk concepts and proposal metadata, not deck construction or con
 
 The domain concerns are:
 
-- talk identity and canonical description
-- talk proposal copy
-- audience fit
-- category/tags for discovery and CFP relevance
-- grouping into a PresentationFamily
-- concept-level lifecycle
-- references to built decks or public presentations
+* talk identity and canonical description
+* talk proposal copy
+* audience fit
+* category/tags for discovery and CFP relevance
+* grouping into a PresentationFamily
+* concept-level lifecycle
+* references to built decks or public presentations
 
 TalkFolio does not own:
 
-- deck build status or slide structure
-- publication mechanics in SlideFed
-- CFP submission state, booking, or acceptance results
-- execution of the no-duplicate-family rule
+* deck build status or slide structure
+* publication mechanics in SlideFed
+* CFP submission state, booking, or acceptance results
+* execution of the no-duplicate-family rule
 
 ## Core Entity: Talk
 
@@ -98,21 +98,21 @@ UpdatedAt: 2026-08-21T00:00:00Z
 
 The current best-fit set of core fields is:
 
-- Id: GUID
-- Title: canonical title
-- AlternateTitles: list of marketing or branding variants
-- Category: coarse top-level selection bucket from a controlled list that can expand over time
-- Tags: topic labels for overlap and CFP matching; free-form strings constrained to alphanumerics and `-`
-- PresentationFamily: family membership object with `Id` and `Variant` (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`)
-- LifecycleStatus: concept-level state
-- ProposalCopyItems: typed array of inline proposal copy blocks, each with `Type` and `Copy` (`|-` literal block)
-- TargetAudience: list of audience descriptors drawn from a controlled list that can expand over time
-- Flags: optional key-value map for talk-level metadata flags such as `Locked`, `ForKids`, or `HandsOn`
-- SlideDeckIds: list of LiquidVictor `SlideDeck.Id` values
-- PublicPresentationReferences: optional links to SlideFed or publication resources
-- RelatedContent: typed list of companion content references (`Type`, `Title`, optional `Url`, `Notes`)
-- IdeationNotes: freeform notes for ideas not yet fully refined
-- CreatedAt / UpdatedAt: operational metadata
+* Id: GUID
+* Title: canonical title
+* AlternateTitles: list of marketing or branding variants
+* Category: coarse top-level selection bucket from a controlled list that can expand over time
+* Tags: topic labels for overlap and CFP matching; free-form strings constrained to alphanumerics and `-`
+* PresentationFamily: family membership object with `Id` and `Variant` (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`)
+* LifecycleStatus: concept-level state
+* ProposalCopyItems: typed array of inline proposal copy blocks, each with `Type` and `Copy` (`|-` literal block)
+* TargetAudience: list of audience descriptors drawn from a controlled list that can expand over time
+* Flags: optional key-value map for talk-level metadata flags such as `Locked`, `ForKids`, or `HandsOn`
+* SlideDeckIds: list of LiquidVictor `SlideDeck.Id` values
+* PublicPresentationReferences: optional links to SlideFed or publication resources
+* RelatedContent: typed list of companion content references (`Type`, `Title`, optional `Url`, `Notes`)
+* IdeationNotes: freeform notes for ideas not yet fully refined
+* CreatedAt / UpdatedAt: operational metadata
 
 ## Category
 
@@ -120,18 +120,18 @@ Category is intentionally coarse and should not be a deep taxonomy.
 
 Current candidate values:
 
-- Agile
-- Algorithms
-- Language Models
-- Leadership & Community
-- Software Engineering
+* Agile
+* Algorithms
+* Language Models
+* Leadership & Community
+* Software Engineering
 
 ### Design intent
 
-- user should be able to filter by a broad topic at a glance
-- most CFPs only need broad topical grouping
-- nuance belongs in Tags, not nested taxonomy branches
-- the list is controlled by the repo but can expand over time as new categories emerge
+* user should be able to filter by a broad topic at a glance
+* most CFPs only need broad topical grouping
+* nuance belongs in Tags, not nested taxonomy branches
+* the list is controlled by the repo but can expand over time as new categories emerge
 
 ## Tags
 
@@ -139,23 +139,23 @@ Tags are the main mechanism for overlap, cross-cutting classification, and CFP m
 
 ### Proposed rules
 
-- Tags are free-form strings, not a deeply nested classification tree.
-- A Talk may have many Tags.
-- Tags capture overlap that a single Category cannot express.
-- Tag values are constrained to alphanumerics and `-` only, with no whitespace.
-- Conference submission systems may map TalkFolio Tags to a conference's fixed vocabulary.
+* Tags are free-form strings, not a deeply nested classification tree.
+* A Talk may have many Tags.
+* Tags capture overlap that a single Category cannot express.
+* Tag values are constrained to alphanumerics and `-` only, with no whitespace.
+* Conference submission systems may map TalkFolio Tags to a conference's fixed vocabulary.
 
 ### Examples
 
-- rag
-- embeddings
-- retrieval
-- graph-rag
-- optimization
-- genetic-algorithms
-- sports-analytics
-- architecture
-- software-engineering
+* rag
+* embeddings
+* retrieval
+* graph-rag
+* optimization
+* genetic-algorithms
+* sports-analytics
+* architecture
+* software-engineering
 
 ## PresentationFamily
 
@@ -165,8 +165,8 @@ A PresentationFamily groups talks that are materially the same core presentation
 
 The Talk owns the relationship through a nested `PresentationFamily` object:
 
-- `PresentationFamily.Id`: the family the talk belongs to
-- `PresentationFamily.Variant`: the talk's variant type within that family (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`)
+* `PresentationFamily.Id`: the family the talk belongs to
+* `PresentationFamily.Variant`: the talk's variant type within that family (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`)
 
 Grouping the two fields into one object keeps family membership cohesive rather than spreading flat fields across the Talk root. A talk with no family simply omits the object.
 
@@ -187,11 +187,11 @@ Notes: |-
 
 ### Invariants
 
-- PresentationFamily is not a taxonomy node.
-- It is a grouping concept, not a category hierarchy.
-- Two talks in the same PresentationFamily should not be co-submitted to the same conference.
-- TalkCircuit enforces this rule at submission time.
-- TalkCircuit can find a talk's family members by querying Talks that share its `PresentationFamily.Id`.
+* PresentationFamily is not a taxonomy node.
+* It is a grouping concept, not a category hierarchy.
+* Two talks in the same PresentationFamily should not be co-submitted to the same conference.
+* TalkCircuit enforces this rule at submission time.
+* TalkCircuit can find a talk's family members by querying Talks that share its `PresentationFamily.Id`.
 
 ## LifecycleStatus
 
@@ -199,15 +199,15 @@ The current working model is concept-level lifecycle rather than build-status li
 
 ### Proposed states
 
-- Ideation
-- Active
-- Retired
+* Ideation
+* Active
+* Retired
 
 ### Design intent
 
-- Ideation: the idea exists, but may not yet have polished copy or a deck.
-- Active: the talk is ready for proposal work or delivery.
-- Retired: the talk should no longer be offered.
+* Ideation: the idea exists, but may not yet have polished copy or a deck.
+* Active: the talk is ready for proposal work or delivery.
+* Retired: the talk should no longer be offered.
 
 ### Explicit non-goal
 
@@ -219,19 +219,19 @@ A Talk can be Active while a deck is still being assembled or while it has not b
 
 Proposal copy supports the speaking portfolio and CFP process. The current proposal language falls into a few categories:
 
-- Abstract
-- ElevatorPitch
-- ShortVersion
-- CommitteeNotes
-- AudienceNotes
-- AlternateTitleCandidates
+* Abstract
+* ElevatorPitch
+* ShortVersion
+* CommitteeNotes
+* AudienceNotes
+* AlternateTitleCandidates
 
 ### Decision
 
 Proposal copy is stored inline on the Talk record as `ProposalCopyItems`, a typed array where each item has:
 
-- `Type`: the copy classification (for example `Abstract`, `ElevatorPitch`, `ShortVersion`, `CommitteeNotes`)
-- `Copy`: the proposal text stored as a YAML `|-` literal block
+* `Type`: the copy classification (for example `Abstract`, `ElevatorPitch`, `ShortVersion`, `CommitteeNotes`)
+* `Copy`: the proposal text stored as a YAML `|-` literal block
 
 This keeps proposal text extensible without changing the Talk schema whenever a new copy type is introduced.
 
@@ -262,19 +262,19 @@ RelatedContent:
 
 ### Rules
 
-- Related content is associated with the Talk concept, not with a specific built deck.
-- A Talk may have zero, one, or many related content items.
-- More than one item of the same `Type` is allowed.
-- Each item has a `Type`, a `Title`, an optional `Url`, and `Notes`.
-- There is no separate `Id` field on a related content item. When present, `Url` is the canonical identifier for the item.
-- `Notes` is the primary place for context, framing, or reason for association, stored as a `|-` literal block.
-- `Summary`, `Status`, and `PublishedAt` are intentionally not included here because those belong to the domain that actually owns the content lifecycle.
-- If some associated material lives in CognitiveInheritance or another domain outside the TalkFolio repo, the TalkFolio entry can still reference it by type, title, URL, and notes without forcing that content to be modeled as a TalkFolio-owned resource.
+* Related content is associated with the Talk concept, not with a specific built deck.
+* A Talk may have zero, one, or many related content items.
+* More than one item of the same `Type` is allowed.
+* Each item has a `Type`, a `Title`, an optional `Url`, and `Notes`.
+* There is no separate `Id` field on a related content item. When present, `Url` is the canonical identifier for the item.
+* `Notes` is the primary place for context, framing, or reason for association, stored as a `|-` literal block.
+* `Summary`, `Status`, and `PublishedAt` are intentionally not included here because those belong to the domain that actually owns the content lifecycle.
+* If some associated material lives in CognitiveInheritance or another domain outside the TalkFolio repo, the TalkFolio entry can still reference it by type, title, URL, and notes without forcing that content to be modeled as a TalkFolio-owned resource.
 
 ### Usage guidance
 
-- RelatedContent is intended for discovery, navigation, and finding companion material tied to a talk — for example, surfacing the blog posts, videos, articles, essays, or notebooks that expand on a talk's subject.
-- It is a lightweight relationship model, not a content-management system or publication workflow. TalkFolio stores only the relationship and reference; the content's lifecycle (drafting, publication, updates, retirement) remains in the domain that owns that content, such as CognitiveInheritance for blog posts.
+* RelatedContent is intended for discovery, navigation, and finding companion material tied to a talk — for example, surfacing the blog posts, videos, articles, essays, or notebooks that expand on a talk's subject.
+* It is a lightweight relationship model, not a content-management system or publication workflow. TalkFolio stores only the relationship and reference; the content's lifecycle (drafting, publication, updates, retirement) remains in the domain that owns that content, such as CognitiveInheritance for blog posts.
 
 ### Why this belongs here
 
@@ -293,9 +293,9 @@ SlideDeckIds:
 
 Rules:
 
-- values are LiquidVictor `SlideDeck.Id` GUIDs
-- LiquidVictor remains the source of truth for deck structure
-- TalkFolio does not write back into the deck schema
+* values are LiquidVictor `SlideDeck.Id` GUIDs
+* LiquidVictor remains the source of truth for deck structure
+* TalkFolio does not write back into the deck schema
 
 ### SlideFed publication references
 
@@ -308,33 +308,33 @@ PublicPresentationReferences:
 
 Rules:
 
-- SlideFed owns the public resource and its publication lifecycle
-- TalkFolio only references it for display or cataloging
+* SlideFed owns the public resource and its publication lifecycle
+* TalkFolio only references it for display or cataloging
 
 ## Resolved Decisions
 
 The following decisions are now settled for TalkFolio:
 
-- Talk identity uses GUIDs for `Id` values. See [ADR-005](ADRs.md#adr-005-talk-ids-use-guids).
-- Tags are free-form strings, constrained to alphanumerics and `-` to keep the data clean and consistent. See [ADR-006](ADRs.md#adr-006-tags-are-free-form-string-tokens-constrained-to-alphanumerics-and-dash).
-- Category is a controlled list that can expand over time. See [ADR-007](ADRs.md#adr-007-category-uses-a-controlled-extensible-list).
-- TargetAudience is a list of strings drawn from a controlled list that can expand over time. See [ADR-008](ADRs.md#adr-008-targetaudience-uses-a-controlled-extensible-list-of-strings).
-- Talk-level flags are modeled as a flexible key-value `Flags` map. See [ADR-009](ADRs.md#adr-009-extra-talk-metadata-flags-use-a-flexible-key-value-map).
-- Only narrative context fields remain intentionally unstructured. See [ADR-010](ADRs.md#adr-010-only-narrative-context-fields-remain-unstructured).
+* Talk identity uses GUIDs for `Id` values. See [ADR-005](ADRs.md#adr-005-talk-ids-use-guids).
+* Tags are free-form strings, constrained to alphanumerics and `-` to keep the data clean and consistent. See [ADR-006](ADRs.md#adr-006-tags-are-free-form-string-tokens-constrained-to-alphanumerics-and-dash).
+* Category is a controlled list that can expand over time. See [ADR-007](ADRs.md#adr-007-category-uses-a-controlled-extensible-list).
+* TargetAudience is a list of strings drawn from a controlled list that can expand over time. See [ADR-008](ADRs.md#adr-008-targetaudience-uses-a-controlled-extensible-list-of-strings).
+* Talk-level flags are modeled as a flexible key-value `Flags` map. See [ADR-009](ADRs.md#adr-009-extra-talk-metadata-flags-use-a-flexible-key-value-map).
+* Only narrative context fields remain intentionally unstructured. See [ADR-010](ADRs.md#adr-010-only-narrative-context-fields-remain-unstructured).
 
 ## Current Recommendation
 
 The working baseline for the first TalkFolio implementation is:
 
-- Talk entity with GUID `Id` and canonical field set
-- controlled-but-extensible Category list
-- Tags as free-form, hyphen-safe strings
-- presentation family with the Talk owning membership via a nested `PresentationFamily` object (`Id` + `Variant`)
-- concept lifecycle of Ideation | Active | Retired
-- references to SlideDeckIds and optional public publication references
-- proposal copy stored inline as `ProposalCopyItems` (typed items with `|-` literal-block copy)
-- companion material referenced via `RelatedContent` (typed, talk-level, lightweight references)
-- flexible talk-level flags via `Flags`
-- unstructured prose limited to `ProposalCopyItems[].Copy`, `IdeationNotes`, `PresentationFamily.Notes`, and `RelatedContent[].Notes`
+* Talk entity with GUID `Id` and canonical field set
+* controlled-but-extensible Category list
+* Tags as free-form, hyphen-safe strings
+* presentation family with the Talk owning membership via a nested `PresentationFamily` object (`Id` + `Variant`)
+* concept lifecycle of Ideation | Active | Retired
+* references to SlideDeckIds and optional public publication references
+* proposal copy stored inline as `ProposalCopyItems` (typed items with `|-` literal-block copy)
+* companion material referenced via `RelatedContent` (typed, talk-level, lightweight references)
+* flexible talk-level flags via `Flags`
+* unstructured prose limited to `ProposalCopyItems[].Copy`, `IdeationNotes`, `PresentationFamily.Notes`, and `RelatedContent[].Notes`
 
 This gives a clean, minimal schema that matches the domain boundary without pulling in deck-building or submission-state concerns.
