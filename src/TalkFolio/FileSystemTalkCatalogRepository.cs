@@ -1,5 +1,7 @@
 namespace TalkFolio;
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using YamlDotNet.Serialization;
 
@@ -30,39 +32,52 @@ public sealed class TalkCatalogRepositoryOptions
 /// <summary>
 /// Reads the TalkFolio catalog from a file-based YAML data source.
 /// </summary>
-public sealed class FileSystemTalkCatalogRepository(IOptions<TalkCatalogRepositoryOptions> options) : ITalkCatalogRepository
+public sealed class FileSystemTalkCatalogRepository(
+    IOptions<TalkCatalogRepositoryOptions> options,
+    ILogger<FileSystemTalkCatalogRepository>? logger = null) : ITalkCatalogRepository
 {
+    private readonly ILogger<FileSystemTalkCatalogRepository> _logger = logger ?? NullLogger<FileSystemTalkCatalogRepository>.Instance;
     private readonly IOptions<TalkCatalogRepositoryOptions> _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <inheritdoc/>
     public async Task<TalkCatalog> LoadAsync(CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("Loading TalkFolio catalog.");
         var dataRoot = _options.Value.DataRoot;
         if (string.IsNullOrWhiteSpace(dataRoot))
         {
+            _logger.LogError("TalkFolio catalog load failed because DataRoot is not configured.");
             throw new InvalidOperationException("The repository data root is not configured.");
         }
 
         if (!Directory.Exists(dataRoot))
         {
+            _logger.LogError("TalkFolio catalog load failed because DataRoot does not exist: {DataRoot}", dataRoot);
             throw new DirectoryNotFoundException($"The TalkFolio data root '{dataRoot}' does not exist.");
         }
 
         var presentationFamiliesDirectory = Path.Combine(dataRoot, "presentation-families");
         var talksDirectory = Path.Combine(dataRoot, "talks");
 
+        _logger.LogInformation("Loading presentation families from {Directory}.", presentationFamiliesDirectory);
         var presentationFamilies = await LoadPresentationFamiliesAsync(presentationFamiliesDirectory, cancellationToken).ConfigureAwait(false);
+        _logger.LogInformation("Loading talks from {Directory}.", talksDirectory);
         var talks = await LoadTalksAsync(talksDirectory, cancellationToken).ConfigureAwait(false);
+        _logger.LogInformation(
+            "Loaded TalkFolio catalog with {TalkCount} talks and {PresentationFamilyCount} presentation families.",
+            talks.Count,
+            presentationFamilies.Count);
 
         return new TalkCatalog(talks, presentationFamilies);
     }
 
-    private static async Task<IReadOnlyList<PresentationFamilyRecord>> LoadPresentationFamiliesAsync(
+    private async Task<IReadOnlyList<PresentationFamilyRecord>> LoadPresentationFamiliesAsync(
         string presentationFamiliesDirectory,
         CancellationToken cancellationToken)
     {
         if (!Directory.Exists(presentationFamiliesDirectory))
         {
+            _logger.LogWarning("Presentation families directory does not exist: {Directory}", presentationFamiliesDirectory);
             return [];
         }
 
@@ -74,23 +89,31 @@ public sealed class FileSystemTalkCatalogRepository(IOptions<TalkCatalogReposito
         foreach (var file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            _logger.LogTrace("Reading presentation family file {FilePath}.", file);
             var yaml = await File.ReadAllTextAsync(file, cancellationToken).ConfigureAwait(false);
             var payload = Deserialize<YamlPresentationFamilyRecord>(yaml);
             if (payload is null)
             {
+                _logger.LogWarning("Skipping presentation family file {FilePath} because it could not be deserialized.", file);
                 continue;
             }
 
+            _logger.LogTrace(
+                "Deserialized presentation family payload {PresentationFamilyId} from {FilePath}.",
+                payload.Id,
+                file);
             families.Add(new PresentationFamilyRecord(payload.Id, payload.Name, payload.Notes));
+            _logger.LogTrace("Mapped presentation family record {PresentationFamilyId} from {FilePath}.", payload.Id, file);
         }
 
         return families.AsReadOnly();
     }
 
-    private static async Task<IReadOnlyList<TalkRecord>> LoadTalksAsync(string talksDirectory, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<TalkRecord>> LoadTalksAsync(string talksDirectory, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(talksDirectory))
         {
+            _logger.LogWarning("Talks directory does not exist: {Directory}", talksDirectory);
             return [];
         }
 
@@ -102,14 +125,22 @@ public sealed class FileSystemTalkCatalogRepository(IOptions<TalkCatalogReposito
         foreach (var file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            _logger.LogTrace("Reading talk file {FilePath}.", file);
             var yaml = await File.ReadAllTextAsync(file, cancellationToken).ConfigureAwait(false);
             var payload = Deserialize<YamlTalkRecord>(yaml);
             if (payload is null)
             {
+                _logger.LogWarning("Skipping talk file {FilePath} because it could not be deserialized.", file);
                 continue;
             }
 
+            _logger.LogTrace(
+                "Deserialized talk payload {TalkId} ({TalkTitle}) from {FilePath}.",
+                payload.Id,
+                payload.Title,
+                file);
             talks.Add(MapTalk(payload));
+            _logger.LogTrace("Mapped talk record {TalkId} from {FilePath}.", payload.Id, file);
         }
 
         return talks.AsReadOnly();

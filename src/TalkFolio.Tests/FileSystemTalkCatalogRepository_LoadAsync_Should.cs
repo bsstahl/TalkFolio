@@ -1,6 +1,8 @@
 namespace TalkFolio.Tests;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 
 public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposable
 {
@@ -60,6 +62,55 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         Assert.Equal(Guid.Parse("8ccdf8b8-fd2c-4d41-9fe0-32fade0f41dc"), family.Id);
         Assert.Equal("The Great Cornholio Speaker Kit", family.Name);
         Assert.Equal("Canonical Cornholio speaking family.", family.Notes);
+    }
+
+    [Fact]
+    public async Task EmitBoundaryLogs_WhenLoadingCatalog()
+    {
+        // Arrange
+        var repositoryRoot = CreateRepositoryRoot();
+        var logger = Substitute.For<ILogger<FileSystemTalkCatalogRepository>>();
+        var target = new FileSystemTalkCatalogRepository(
+            Options.Create(new TalkCatalogRepositoryOptions
+            {
+                DataRoot = repositoryRoot,
+            }),
+            logger);
+
+        // Act
+        _ = await target.LoadAsync(CancellationToken.None);
+
+        // Assert
+        var calls = logger.ReceivedCalls()
+            .Select(static call => call.GetArguments())
+            .ToList();
+
+        Assert.Contains(
+            calls,
+            static arguments => arguments[0] is LogLevel level
+                && level == LogLevel.Information
+                && arguments[2]?.ToString()?.Contains("Loading TalkFolio catalog.", StringComparison.Ordinal) == true);
+        Assert.Contains(
+            calls,
+            static arguments => arguments[0] is LogLevel level
+                && level == LogLevel.Information
+                && arguments[2]?.ToString()?.Contains("Loading talks from", StringComparison.Ordinal) == true);
+        Assert.Contains(
+            calls,
+            static arguments => arguments[0] is LogLevel level
+                && level == LogLevel.Information
+                && arguments[2]?.ToString()?.Contains("Loaded TalkFolio catalog with", StringComparison.Ordinal) == true);
+        Assert.Contains(
+            calls,
+            static arguments => arguments[0] is LogLevel level
+                && level == LogLevel.Trace
+                && arguments[2]?.ToString()?.Contains("Deserialized talk payload", StringComparison.Ordinal) == true
+                && arguments[2]?.ToString()?.Contains("Finding TP for Your People's Bungholes", StringComparison.Ordinal) == true);
+        Assert.Contains(
+            calls,
+            static arguments => arguments[0] is LogLevel level
+                && level == LogLevel.Trace
+                && arguments[2]?.ToString()?.Contains("Deserialized presentation family payload", StringComparison.Ordinal) == true);
     }
 
     public void Dispose()

@@ -87,6 +87,14 @@ Follow the repository test instructions in [.github/instructions/test-methodolog
 
 This repo is deliberately documentation-heavy. When a change affects a domain decision, schema, or boundary, update the relevant docs alongside the work.
 
+### 5. Follow the logging convention
+
+When adding logging:
+
+* log activity and boundary transitions at informational levels
+* keep payload bodies, record snapshots, and other verbose diagnostics at trace level
+* avoid promoting payload detail to information unless the log message itself describes a meaningful product event rather than the data contents
+
 ## Branching and review expectations
 
 * Use a short-lived feature branch for work

@@ -174,3 +174,20 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 **Rationale:** This is the conventional .NET configuration model and keeps the app behavior predictable across local development, deployed environments, and automated tests. It also preserves a clean separation between checked-in defaults, environment-specific deployment values, and test-specific overrides.
 
 **Consequences:** The data root, repository selection, and related runtime settings should all be supplied through the configuration system rather than as hard-coded constants. Bootstrap work must define how the configurable root is supplied and how test repositories are organized, and the product cannot assume that a checked-in repo-local catalog is the default operating mode.
+
+## ADR-014: Boundary activity logs are informational; payload detail is trace-only
+
+**Status:** Decided
+
+**Decision:** TalkFolio logs boundary and activity events at informational levels, while message payload detail is reserved for trace-level logs.
+
+**Rules:**
+
+* Method entry, method exit, and cross-boundary activity should be logged at `Information` or higher when they represent product-relevant work.
+* Payload content, record field values, and other verbose data snapshots should be logged at `Trace` so they do not appear in normal operation.
+* Diagnostic warnings and failures may use `Warning` or `Error` as appropriate, but they should not duplicate verbose payload bodies at higher levels.
+* The same convention should apply across TalkFolio components so logs remain readable and predictable.
+
+**Rationale:** Operational logs should describe what the system is doing without flooding normal output with full payload data. Trace-level payload logging preserves debugging detail when needed while keeping default log volume manageable.
+
+**Consequences:** Implementations must separate activity logs from payload-detail logs. Reviewers should expect informational logs at subsystem boundaries and trace logs for payload snapshots or object-value dumps.
