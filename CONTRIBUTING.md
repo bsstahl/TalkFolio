@@ -53,6 +53,14 @@ dotnet test
 
 At this stage, the repo is still documentation-first; do not assume there is a full implementation or a fully populated CI pipeline. When implementation work begins, keep the project runnable from the repo root with no hidden setup steps.
 
+## Test data conventions
+
+When you add TalkFolio-only test data, keep it aligned to the repository's established Beavis & Butthead / Great Cornholio theme.
+
+Use that theme for fixture talks, related content, sample speakers, and similar repository-local examples whenever it fits naturally. The current baseline example speaker is The Great Cornholio, with talks such as "Finding TP for Your People's Bungholes" and "Identifying Sources of Caffeine."
+
+This convention exists to keep test fixtures recognizable, consistent, and clearly separate from real speaking-catalog content. It applies to repository-local tests and fixtures, not to the product's canonical schema or to external production data sources.
+
 ## Development workflow
 
 ### 1. Start from the design baseline
