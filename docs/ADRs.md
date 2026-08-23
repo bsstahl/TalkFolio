@@ -125,3 +125,37 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 **Rationale:** Structured fields improve consistency, filtering, and downstream tooling. The remaining prose fields exist specifically to preserve authored language, explanatory context, and editorial notes that do not fit cleanly into a rigid structure.
 
 **Consequences:** New talk data should default to structured fields unless it is clearly narrative or explanatory prose.
+
+## ADR-011: Storage access occurs through repository abstractions
+
+**Status:** Decided
+
+**Decision:** All product interactions with TalkFolio data occur through repository abstractions rather than directly through file paths, directory walks, or storage-specific code.
+
+**Rules:**
+
+- The initial persistence adapter may be file-based and YAML-backed.
+- Application and domain logic depend on repository contracts, not on file-system details.
+- The canonical identity of a Talk or PresentationFamily remains its `Id`, not its file name or path.
+- Swapping the file-based adapter for a database-backed adapter should not require redesigning the domain model.
+
+**Rationale:** TalkFolio wants a file-based MVP, but it should not couple the rest of the product to that storage choice. A repository boundary keeps the model portable and makes future storage changes, such as moving to a database, far easier.
+
+**Consequences:** File naming, directory layout, and root-path resolution are infrastructure concerns. Validation and catalog logic should operate on loaded records, not on direct file-system assumptions.
+
+## ADR-012: File-backed data roots are configurable and generally external to this repo
+
+**Status:** Decided
+
+**Decision:** When TalkFolio uses a file-backed store, the data root is configurable and will generally live outside this implementation repo so the data can be versioned and maintained separately from the product code.
+
+**Rules:**
+
+- Production-like or maintained talk catalogs should not be assumed to live inside this repo.
+- The implementation must accept a configurable data root rather than hard-coding a repository-local path.
+- This repo may include dedicated test repositories or fixture datasets for automated tests, local development, and validation scenarios.
+- The test datasets exist to support product validation, not to define the long-term location of maintained catalog data.
+
+**Rationale:** The product code and the talk catalog have different lifecycles. Keeping the maintained catalog generally external preserves independent versioning and reduces coupling between implementation work and content maintenance.
+
+**Consequences:** Bootstrap work must define how the configurable root is supplied and how test repositories are organized. The product cannot assume that a checked-in repo-local catalog is the default operating mode.
