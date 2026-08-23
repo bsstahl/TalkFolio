@@ -1,6 +1,6 @@
 # TalkFolio
 
-TalkFolio is the SpeakerOps bounded context for managing talks as concepts, independent of whether any particular slide deck has been built yet.
+TalkFolio is a product in the [SpeakerOps](../SpeakerOps/README.md) family for managing talks as concepts, independent of whether any particular slide deck has been built yet.
 
 It owns the speaking portfolio: talk titles, proposal language, audience fit, topic classification, and the PresentationFamily grouping used to identify talks that are fundamentally the same idea or marketing variant.
 
@@ -48,6 +48,45 @@ The per-talk notes are especially valuable for abstracts, elevator pitches, audi
 - [TalkFolio Integration Strategy](docs/Integration-Strategy.md)
 - [TalkFolio Schema Direction](docs/TalkSchema.md)
 - [Architecture Decision Records](docs/ADRs.md)
+
+## Feature Candidates
+
+| Feature | What it covers | MVP |
+|---|---|---|
+| Structured talk catalog | Store Talk records with GUID identity, title, lifecycle, category, tags, audience, flags, and references. | Yes |
+| Proposal copy library | Keep typed proposal copy blocks on each talk for abstracts, pitches, and related CFP text. | Yes |
+| Presentation family grouping | Group near-duplicate talk variants and classify each talk's family role with `PresentationFamily.Variant`. | Yes |
+| Related content references | Link companion blog posts, videos, articles, essays, notebooks, and similar material to a talk. | Yes |
+| Deck and publication references | Reference LiquidVictor decks and SlideFed/public presentation resources without owning their lifecycle. | Yes |
+| Validation and linting | Validate talk files, schema rules, relationship integrity, and data quality. | Yes |
+| Migration tooling | Import and normalize talk data from `bss-notes`, `Talk-Catalog.md`, and related sources. | Yes |
+| Catalog browsing and filtering | List and filter talks by category, tag, lifecycle, audience, and family membership. | Yes |
+| Controlled vocabularies | Maintain curated-but-extensible lists for Category and TargetAudience, plus tag formatting rules. | Later |
+| TalkCircuit read model/export | Produce a stable machine-consumable output for downstream submission tooling. | Later |
+| Authoring scaffolds | Generate starter Talk and PresentationFamily records from templates. | Later |
+| Rich authoring UI | Form-based or browser-based editing experience. | Later |
+| External sync automation | Automatic sync with external repos or content systems. | Later |
+| Submission workflow | CFP state, acceptance tracking, bookings, and conference operations. | No |
+| Publication workflow | SlideFed publication lifecycle or CognitiveInheritance content lifecycle management. | No |
+
+## Recommended MVP
+
+The recommended MVP should include:
+
+- file-based Talk and PresentationFamily records that match the documented schema
+- validation tooling for schema and cross-record relationships
+- migration tooling to pull structured data from the existing notes sources
+- basic catalog commands or reports for listing and filtering talks
+
+The MVP should explicitly defer:
+
+- controlled vocabulary source files for Category and TargetAudience
+- TalkCircuit-friendly export/read model for proposal submission workflows
+- rich editing UI
+- authoring scaffolds unless they fall out cheaply from the file format work
+- automated external sync
+- submission-state workflows
+- publication/content-management workflows outside TalkFolio's boundary
 
 ## Status
 
