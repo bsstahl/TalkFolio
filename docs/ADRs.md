@@ -41,15 +41,15 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 
 **Status:** Decided
 
-**Decision:** PresentationFamily remains a separate entity, but the relationship is owned by the Talk:
+**Decision:** The PresentationFamily relationship is owned by the Talk, and the model does not keep a separate family file or family record list:
 
-* Each Talk carries a nested `PresentationFamily` object with `Id` and `Variant` (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`). A talk with no family omits the object.
-* The PresentationFamily entity is just `Id`, `Name`, and `Notes`; it does not list members. Membership is discovered by querying Talks by `PresentationFamily.Id`.
+* Each Talk carries a nested `PresentationFamily` object with `Name` and `Variant` (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`). A talk with no family omits the object.
+* The family name acts as the stable identity for the grouping concept; a talk's variant is a per-talk classification within that family.
 * `CanonicalTalkId` is removed. A family is not required to have a canonical talk; when one exists, "canonical" is a `Variant` value on the Talk, not a structural field on the family.
 
-**Rationale:** Single-direction ownership matches the existing Talk → SlideDeckIds reference pattern and avoids duplicated references (Talk → family and family → talks) drifting out of sync. Variant identity belongs to the talk, and canonical status is a classification, not structure. Encapsulating `Id` and `Variant` in one object keeps family membership cohesive rather than flat fields on the Talk root.
+**Rationale:** Single-direction ownership matches the existing Talk → SlideDeckIds pattern and avoids a redundant family entity whose membership list would drift out of sync. The lightweight talk-level object keeps family membership cohesive without needing a second persisted file or membership table. The tradeoff is that family names must be treated as stable identifiers and renamed intentionally when the grouping changes.
 
-**Consequences:** TalkCircuit finds a talk's family members by querying Talks that share its `PresentationFamily.Id`. There is no denormalized member list to maintain.
+**Consequences:** TalkCircuit finds a talk's family members by querying Talks that share the same `PresentationFamily.Name`. There is no denormalized family entity or membership list to maintain.
 
 ## ADR-004: Multi-line text uses `|-` literal blocks
 

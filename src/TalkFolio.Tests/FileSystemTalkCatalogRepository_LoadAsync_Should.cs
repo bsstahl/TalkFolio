@@ -50,7 +50,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         Assert.Equal("Companion article for Cornholio's TP sourcing strategy.", relatedContent.Notes);
 
         Assert.NotNull(talk.PresentationFamily);
-        Assert.Equal(Guid.Parse("8ccdf8b8-fd2c-4d41-9fe0-32fade0f41dc"), talk.PresentationFamily!.Id);
+        Assert.Equal("The Great Cornholio Speaker Kit", talk.PresentationFamily!.Name);
         Assert.Equal("Canonical", talk.PresentationFamily.Variant);
 
         var publicPresentation = Assert.Single(talk.PublicPresentationReferences);
@@ -58,10 +58,76 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         Assert.Equal("https://example.com/presentation/great-cornholio-tp", publicPresentation.Url);
         Assert.Equal("great-cornholio-tp", publicPresentation.PublicId);
 
-        var family = Assert.Single(actual.PresentationFamilies);
-        Assert.Equal(Guid.Parse("8ccdf8b8-fd2c-4d41-9fe0-32fade0f41dc"), family.Id);
-        Assert.Equal("The Great Cornholio Speaker Kit", family.Name);
-        Assert.Equal("Canonical Cornholio speaking family.", family.Notes);
+    }
+
+    [Fact]
+    public async Task IgnoreMalformedYamlFiles_WhenTalkRecordCannotBeDeserialized()
+    {
+        // Arrange
+        var repositoryRoot = Path.Combine(Path.GetTempPath(), $"talkfolio-malformed-yaml-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(repositoryRoot);
+        var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
+
+        File.WriteAllText(
+            Path.Combine(talksDirectory.FullName, "valid-talk.yaml"),
+            """
+            Id: 12345678-1234-1234-1234-123456789abc
+            Title: Valid Talk
+            Category: Leadership & Community
+            Tags:
+              - valid
+            PresentationFamily:
+              Name: Valid Family
+              Variant: Canonical
+            LifecycleStatus: Active
+            """);
+
+        File.WriteAllText(
+            Path.Combine(talksDirectory.FullName, "broken-talk.yaml"),
+            """
+            Id: 87654321-4321-4321-4321-cba987654321
+            Title: Broken Talk
+            AlternateTitles:
+              - Workshop Edition: TP for Teams
+            Category: Leadership & Community
+            Tags:
+              - broken
+            PresentationFamily:
+              Name: Broken Family
+              Variant: Canonical
+            LifecycleStatus: Active
+            """);
+
+        try
+        {
+            var logger = Substitute.For<ILogger<FileSystemTalkCatalogRepository>>();
+            var target = new FileSystemTalkCatalogRepository(
+                Options.Create(new TalkCatalogRepositoryOptions
+                {
+                    DataRoot = repositoryRoot,
+                }),
+                logger);
+
+            // Act
+            var actual = await target.LoadAsync(CancellationToken.None);
+
+            // Assert
+            var talk = Assert.Single(actual.Talks);
+            Assert.Equal("Valid Talk", talk.Title);
+            Assert.Contains(
+                logger.ReceivedCalls(),
+                static call => call.GetArguments()[0] is LogLevel level
+                    && level == LogLevel.Warning
+                    && call.GetArguments()[2]?.ToString()?.Contains("malformed YAML", StringComparison.Ordinal) == true
+                    && call.GetArguments()[2]?.ToString()?.Contains("quoted", StringComparison.Ordinal) == true);
+        }
+        finally
+        {
+            if (Directory.Exists(repositoryRoot))
+            {
+                Directory.Delete(repositoryRoot, recursive: true);
+            }
+        }
     }
 
     [Fact]
@@ -106,7 +172,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
                 && level == LogLevel.Trace
                 && arguments[2]?.ToString()?.Contains("Deserialized talk payload", StringComparison.Ordinal) == true
                 && arguments[2]?.ToString()?.Contains("Finding TP for Your People's Bungholes", StringComparison.Ordinal) == true);
-        Assert.Contains(
+        Assert.DoesNotContain(
             calls,
             static arguments => arguments[0] is LogLevel level
                 && level == LogLevel.Trace
@@ -124,17 +190,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
     private string CreateRepositoryRoot()
     {
         var repositoryRoot = Path.Combine(_dataRoot, "catalog");
-        var presentationFamiliesDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "presentation-families"));
         var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
-
-        File.WriteAllText(
-            Path.Combine(presentationFamiliesDirectory.FullName, "great-cornholio-speaker-kit.yaml"),
-            """
-            Id: 8ccdf8b8-fd2c-4d41-9fe0-32fade0f41dc
-            Name: The Great Cornholio Speaker Kit
-            Notes: |-
-              Canonical Cornholio speaking family.
-            """);
 
         File.WriteAllText(
             Path.Combine(talksDirectory.FullName, "finding-tp-for-your-peoples-bungholes.yaml"),
@@ -148,7 +204,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
               - tp
               - bungholes
             PresentationFamily:
-              Id: 8ccdf8b8-fd2c-4d41-9fe0-32fade0f41dc
+              Name: The Great Cornholio Speaker Kit
               Variant: Canonical
             LifecycleStatus: Active
             ProposalCopyItems:

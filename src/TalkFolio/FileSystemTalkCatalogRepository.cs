@@ -3,6 +3,7 @@ namespace TalkFolio;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
 /// <summary>
@@ -56,57 +57,13 @@ public sealed class FileSystemTalkCatalogRepository(
             throw new DirectoryNotFoundException($"The TalkFolio data root '{dataRoot}' does not exist.");
         }
 
-        var presentationFamiliesDirectory = Path.Combine(dataRoot, "presentation-families");
         var talksDirectory = Path.Combine(dataRoot, "talks");
 
-        _logger.LogInformation("Loading presentation families from {Directory}.", presentationFamiliesDirectory);
-        var presentationFamilies = await LoadPresentationFamiliesAsync(presentationFamiliesDirectory, cancellationToken).ConfigureAwait(false);
         _logger.LogInformation("Loading talks from {Directory}.", talksDirectory);
         var talks = await LoadTalksAsync(talksDirectory, cancellationToken).ConfigureAwait(false);
-        _logger.LogInformation(
-            "Loaded TalkFolio catalog with {TalkCount} talks and {PresentationFamilyCount} presentation families.",
-            talks.Count,
-            presentationFamilies.Count);
+        _logger.LogInformation("Loaded TalkFolio catalog with {TalkCount} talks.", talks.Count);
 
-        return new TalkCatalog(talks, presentationFamilies);
-    }
-
-    private async Task<IReadOnlyList<PresentationFamilyRecord>> LoadPresentationFamiliesAsync(
-        string presentationFamiliesDirectory,
-        CancellationToken cancellationToken)
-    {
-        if (!Directory.Exists(presentationFamiliesDirectory))
-        {
-            _logger.LogWarning("Presentation families directory does not exist: {Directory}", presentationFamiliesDirectory);
-            return [];
-        }
-
-        var families = new List<PresentationFamilyRecord>();
-        var files = Directory.EnumerateFiles(presentationFamiliesDirectory, "*.*", SearchOption.TopDirectoryOnly)
-            .Where(static file => file.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))
-            .OrderBy(static file => file, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var file in files)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            _logger.LogTrace("Reading presentation family file {FilePath}.", file);
-            var yaml = await File.ReadAllTextAsync(file, cancellationToken).ConfigureAwait(false);
-            var payload = Deserialize<YamlPresentationFamilyRecord>(yaml);
-            if (payload is null)
-            {
-                _logger.LogWarning("Skipping presentation family file {FilePath} because it could not be deserialized.", file);
-                continue;
-            }
-
-            _logger.LogTrace(
-                "Deserialized presentation family payload {PresentationFamilyId} from {FilePath}.",
-                payload.Id,
-                file);
-            families.Add(new PresentationFamilyRecord(payload.Id, payload.Name, payload.Notes));
-            _logger.LogTrace("Mapped presentation family record {PresentationFamilyId} from {FilePath}.", payload.Id, file);
-        }
-
-        return families.AsReadOnly();
+        return new TalkCatalog(talks);
     }
 
     private async Task<IReadOnlyList<TalkRecord>> LoadTalksAsync(string talksDirectory, CancellationToken cancellationToken)
@@ -127,10 +84,20 @@ public sealed class FileSystemTalkCatalogRepository(
             cancellationToken.ThrowIfCancellationRequested();
             _logger.LogTrace("Reading talk file {FilePath}.", file);
             var yaml = await File.ReadAllTextAsync(file, cancellationToken).ConfigureAwait(false);
-            var payload = Deserialize<YamlTalkRecord>(yaml);
+            YamlTalkRecord? payload;
+            try
+            {
+                payload = Deserialize<YamlTalkRecord>(yaml, file);
+            }
+            catch (Exception)
+            {
+                // Handled by Deserialize<T> logging and fallback.
+                payload = null;
+            }
+
             if (payload is null)
             {
-                _logger.LogWarning("Skipping talk file {FilePath} because it could not be deserialized.", file);
+                _logger.LogWarning("Skipping talk file {FilePath} because it could not be deserialized. Review the YAML structure and ensure values containing colons are quoted.", file);
                 continue;
             }
 
@@ -157,7 +124,7 @@ public sealed class FileSystemTalkCatalogRepository(
             LifecycleStatus: source.LifecycleStatus ?? string.Empty,
             TargetAudience: source.TargetAudience ?? [],
             PresentationFamily: source.PresentationFamily is null ? null : new PresentationFamilyReference(
-                source.PresentationFamily.Id,
+                source.PresentationFamily.Name ?? string.Empty,
                 source.PresentationFamily.Variant ?? string.Empty),
             SlideDeckIds: source.SlideDeckIds ?? [],
             ProposalCopyItems: source.ProposalCopyItems is null
@@ -191,13 +158,26 @@ public sealed class FileSystemTalkCatalogRepository(
             UpdatedAt: source.UpdatedAt);
     }
 
-    private static T? Deserialize<T>(string yaml)
+    private T? Deserialize<T>(string yaml, string filePath)
     {
         var deserializer = new DeserializerBuilder()
             .IgnoreUnmatchedProperties()
             .Build();
 
-        return deserializer.Deserialize<T>(yaml);
+        try
+        {
+            return deserializer.Deserialize<T>(yaml);
+        }
+        catch (YamlException ex)
+        {
+            _logger.LogWarning(ex, "Skipping YAML file {FilePath} because it is malformed YAML. Scalar values containing \":\" must be quoted, for example: - \"Workshop Edition: TP for Teams\".", filePath);
+            return default;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Skipping YAML file {FilePath} because the payload could not be constructed. Review the YAML structure and ensure values containing colons are quoted.", filePath);
+            return default;
+        }
     }
 }
 
@@ -205,8 +185,7 @@ public sealed class FileSystemTalkCatalogRepository(
 /// Represents the complete TalkFolio catalog returned by the repository.
 /// </summary>
 /// <param name="Talks">The talks managed by the catalog.</param>
-/// <param name="PresentationFamilies">The presentation families referenced by talks.</param>
-public sealed record TalkCatalog(IReadOnlyList<TalkRecord> Talks, IReadOnlyList<PresentationFamilyRecord> PresentationFamilies);
+public sealed record TalkCatalog(IReadOnlyList<TalkRecord> Talks);
 
 /// <summary>
 /// Represents a canonical Talk record in the TalkFolio read model.
@@ -246,19 +225,11 @@ public sealed record TalkRecord(
     DateTimeOffset? UpdatedAt);
 
 /// <summary>
-/// Represents a canonical presentation family in the TalkFolio read model.
-/// </summary>
-/// <param name="Id">The unique identifier for the presentation family.</param>
-/// <param name="Name">The display name of the presentation family.</param>
-/// <param name="Notes">Optional notes about the presentation family.</param>
-public sealed record PresentationFamilyRecord(Guid Id, string Name, string? Notes);
-
-/// <summary>
 /// Represents the family relationship for a talk within the canonical model.
 /// </summary>
-/// <param name="Id">The presentation family identifier.</param>
+/// <param name="Name">The stable family name the talk belongs to.</param>
 /// <param name="Variant">The talk's variant within the family.</param>
-public sealed record PresentationFamilyReference(Guid Id, string Variant);
+public sealed record PresentationFamilyReference(string Name, string Variant);
 
 /// <summary>
 /// Represents typed proposal copy attached to a talk.
@@ -319,18 +290,9 @@ internal sealed class YamlTalkRecord
     public DateTimeOffset? UpdatedAt { get; set; }
 }
 
-internal sealed class YamlPresentationFamilyRecord
-{
-    public Guid Id { get; set; }
-
-    public string Name { get; set; } = string.Empty;
-
-    public string? Notes { get; set; }
-}
-
 internal sealed class YamlPresentationFamilyReference
 {
-    public Guid Id { get; set; }
+    public string? Name { get; set; }
 
     public string? Variant { get; set; }
 }

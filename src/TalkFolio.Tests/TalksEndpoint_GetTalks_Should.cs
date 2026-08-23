@@ -41,6 +41,9 @@ public sealed class TalksEndpoint_GetTalks_Should : IDisposable
         var talk = Assert.Single(talks!);
         Assert.Equal(Guid.Parse("6c8d4d27-9cc7-4c41-9bf8-19e55758e7cc"), talk.Id);
         Assert.Equal("Finding TP for Your People's Bungholes", talk.Title);
+        Assert.NotNull(talk.PresentationFamily);
+        Assert.Equal("The Great Cornholio Speaker Kit", talk.PresentationFamily!.Name);
+        Assert.Equal("Canonical", talk.PresentationFamily.Variant);
     }
 
     public void Dispose()
@@ -54,17 +57,7 @@ public sealed class TalksEndpoint_GetTalks_Should : IDisposable
     private string CreateRepositoryRoot()
     {
         var repositoryRoot = Path.Combine(_dataRoot, "catalog");
-        var presentationFamiliesDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "presentation-families"));
         var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
-
-        File.WriteAllText(
-            Path.Combine(presentationFamiliesDirectory.FullName, "great-cornholio-speaker-kit.yaml"),
-            """
-            Id: 8ccdf8b8-fd2c-4d41-9fe0-32fade0f41dc
-            Name: The Great Cornholio Speaker Kit
-            Notes: |-
-              Canonical Cornholio speaking family.
-            """);
 
         File.WriteAllText(
             Path.Combine(talksDirectory.FullName, "finding-tp-for-your-peoples-bungholes.yaml"),
@@ -78,7 +71,7 @@ public sealed class TalksEndpoint_GetTalks_Should : IDisposable
               - tp
               - bungholes
             PresentationFamily:
-              Id: 8ccdf8b8-fd2c-4d41-9fe0-32fade0f41dc
+              Name: The Great Cornholio Speaker Kit
               Variant: Canonical
             LifecycleStatus: Active
             ProposalCopyItems:

@@ -165,33 +165,33 @@ A PresentationFamily groups talks that are materially the same core presentation
 
 The Talk owns the relationship through a nested `PresentationFamily` object:
 
-* `PresentationFamily.Id`: the family the talk belongs to
+* `PresentationFamily.Name`: the stable family name that groups related talks
 * `PresentationFamily.Variant`: the talk's variant type within that family (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`)
 
-Grouping the two fields into one object keeps family membership cohesive rather than spreading flat fields across the Talk root. A talk with no family simply omits the object.
+Keeping the object as `Name` + `Variant` means the relationship stays local to the talk and avoids a second managed family record with redundant membership state. A talk with no family simply omits the object.
 
-The PresentationFamily entity does not list its members. Membership is discovered by querying Talks by `PresentationFamily.Id`, which keeps the relationship single-directional (matching the Talk → SlideDeckIds pattern) and avoids two copies of the same data drifting apart.
+Membership is discovered by querying Talks that share the same `PresentationFamily.Name`, which keeps the relationship single-directional (matching the Talk → SlideDeckIds pattern) and avoids two copies of the same data drifting apart.
 
 ### Canonical talks
 
-There is no `CanonicalTalkId` on the family. A family is not required to have a canonical talk at all. When one exists, "canonical" is expressed as a `PresentationFamily.Variant` value on the Talk, not as a structural field on the family.
+There is no separate `CanonicalTalkId` on a family object. A family is not required to have a canonical talk at all. When one exists, "canonical" is expressed as a `PresentationFamily.Variant` value on the Talk, not as a structural field on the family.
 
 ### Proposed entity shape
 
 ```yaml
-Id: 8ccdf8b8-fd2c-4d41-9fe0-32fade0f41dc
-Name: RAG Deep Dive
-Notes: |-
-  This family includes both the "deep dive" and variant branding used for different audiences.
+PresentationFamily:
+  Name: RAG Deep Dive
+  Variant: Canonical
 ```
 
 ### Invariants
 
 * PresentationFamily is not a taxonomy node.
 * It is a grouping concept, not a category hierarchy.
+* Family names are treated as stable identifiers for the grouping, not display-only text.
 * Two talks in the same PresentationFamily should not be co-submitted to the same conference.
 * TalkCircuit enforces this rule at submission time.
-* TalkCircuit can find a talk's family members by querying Talks that share its `PresentationFamily.Id`.
+* TalkCircuit can find a talk's family members by querying Talks that share its `PresentationFamily.Name`.
 
 ## LifecycleStatus
 

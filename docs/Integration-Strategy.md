@@ -65,7 +65,7 @@ Rules:
 
 * TalkCircuit owns submission and booking state.
 * TalkCircuit may snapshot proposal copy at submission time, because submitted wording can diverge from the current catalog text.
-* TalkCircuit enforces the rule that two Talks from the same PresentationFamily are not submitted to the same conference, finding a talk's family members by querying Talks that share its `PresentationFamily.Id`.
+* TalkCircuit enforces the rule that two Talks from the same PresentationFamily are not submitted to the same conference, finding a talk's family members by querying Talks that share its `PresentationFamily.Name`.
 
 ## Related Content
 
@@ -113,7 +113,7 @@ Expected migration mapping:
 
 ## Open Questions
 
-* What exact on-disk directory layout should a file-backed repository use for Talks and PresentationFamilies?
+* What exact on-disk directory layout should a file-backed repository use for Talk records and any related materials?
 * What file-naming convention should a file-backed repository use for stable, readable records?
 * How should the configurable data-root path be supplied at runtime (for example, CLI option, config file, environment variable, or a combination)?
 * What configuration precedence should be used in the standard .NET pipeline: JSON files first, environment variables second, and in-memory settings last?
