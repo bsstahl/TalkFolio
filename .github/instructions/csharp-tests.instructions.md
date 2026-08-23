@@ -23,7 +23,7 @@ Use XUnit with NSubstitute for mocking. Focus on class behaviors rather than imp
 
 Test file naming matches the class and method name under test: `PipelineService_GetPipelines_Should`.
 
-Test method name matches the expected result and, if necessary, any special conditions: `ExpectedResult_SpecialCoditions` or `ExpectedResult`.
+Test method name matches the expected result and, if necessary, any special conditions: `ExpectedResult_SpecialConditions` or `ExpectedResult`.
 
 The resulting fully-qualified test name should read like a sentence: `PipelineService_GetPipelines_Should.ReturnAllPipelines_WhenParametersAreValid`.
 
