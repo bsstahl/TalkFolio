@@ -179,7 +179,7 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 
 **Status:** Decided
 
-**Decision:** TalkFolio logs boundary and activity events at informational levels, while message payload detail is reserved for trace-level logs.
+**Decision:** TalkFolio logs boundary and activity events at informational levels, while message payload detail is reserved for trace-level logs. This is a required completion rule for all TalkFolio work, not an optional preference.
 
 **Rules:**
 
@@ -187,7 +187,8 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 * Payload content, record field values, and other verbose data snapshots should be logged at `Trace` so they do not appear in normal operation.
 * Diagnostic warnings and failures may use `Warning` or `Error` as appropriate, but they should not duplicate verbose payload bodies at higher levels.
 * The same convention should apply across TalkFolio components so logs remain readable and predictable.
+* Work is not considered complete unless any new or changed logging follows this convention.
 
 **Rationale:** Operational logs should describe what the system is doing without flooding normal output with full payload data. Trace-level payload logging preserves debugging detail when needed while keeping default log volume manageable.
 
-**Consequences:** Implementations must separate activity logs from payload-detail logs. Reviewers should expect informational logs at subsystem boundaries and trace logs for payload snapshots or object-value dumps.
+**Consequences:** Implementations must separate activity logs from payload-detail logs. Reviewers should expect informational logs at subsystem boundaries and trace logs for payload snapshots or object-value dumps. Any completed change should be checked against this rule before it is considered done.

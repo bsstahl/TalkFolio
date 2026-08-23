@@ -39,6 +39,7 @@ Before making changes, read the repo guidance that applies to the work:
 * [.github/instructions/test-methodology.instructions.md](./.github/instructions/test-methodology.instructions.md)
 * [.github/instructions/markdown.instructions.md](./.github/instructions/markdown.instructions.md)
 * [.github/instructions/writing-style.instructions.md](./.github/instructions/writing-style.instructions.md)
+* [.github/instructions/logging.instructions.md](./.github/instructions/logging.instructions.md)
 
 ## Tooling and environment
 
