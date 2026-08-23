@@ -3,7 +3,7 @@ title: TalkFolio Architecture
 description: Architectural direction for TalkFolio as a product in the SpeakerOps family, including domain boundaries, implementation principles, and future evolution.
 ---
 
-# TalkFolio Architecture
+## TalkFolio Architecture
 
 This document describes the intended architecture for TalkFolio as a product in the SpeakerOps family of products. It is intentionally oriented toward the repo's current documentation-first state, while still describing the architecture the implementation should preserve as the codebase evolves.
 
