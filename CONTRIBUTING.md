@@ -3,7 +3,7 @@ title: Contributing to TalkFolio
 description: Contribution expectations for the TalkFolio SpeakerOps repository, including tooling, workflow, and review conventions.
 ---
 
-# Contributing to TalkFolio
+## Contributing to TalkFolio
 
 This repository is TalkFolio, a fully functional product in the SpeakerOps family of products for managing talk concepts. Contributions should keep the product focused on talk identity, proposal language, catalog metadata, and the relationships that help surface and discover a talk without owning external content lifecycles.
 
