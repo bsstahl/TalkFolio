@@ -164,7 +164,7 @@ See <https://example.com> and [Docs](https://example.com/docs).
 * Use a consistent style for emphasis and strong emphasis throughout a document. Prefer `*italic*` and `**bold**` for new content.
 * Do not put spaces inside emphasis markers: `**bold**`, not `** bold **`.
 * Do not use emphasis-only lines as section separators; use proper headings instead.
- * Avoid emphasis within words using underscores; prefer asterisks for word-internal emphasis if absolutely necessary.
+* Avoid emphasis within words using underscores; prefer asterisks for word-internal emphasis if absolutely necessary.
 
 ## Tables
 
