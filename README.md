@@ -12,15 +12,15 @@ All contributors and users are expected to follow the [Strict Accountability Pol
 
 TalkFolio owns:
 
-- talk concepts and their canonical identities
-- abstracts, elevator pitches, short versions, and selection-committee language
-- target audience descriptions
-- alternate titles and marketing variants
-- Category and Tags used for discovery and CFP fit
-- PresentationFamily grouping
-- concept-level lifecycle (`Ideation`, `Active`, `Retired`)
-- references to built LiquidVictor decks that fulfill a talk concept
-- optional references to published SlideFed resources that represent public/federated versions of a talk
+* talk concepts and their canonical identities
+* abstracts, elevator pitches, short versions, and selection-committee language
+* target audience descriptions
+* alternate titles and marketing variants
+* Category and Tags used for discovery and CFP fit
+* PresentationFamily grouping
+* concept-level lifecycle (`Ideation`, `Active`, `Retired`)
+* references to built LiquidVictor decks that fulfill a talk concept
+* optional references to published SlideFed resources that represent public/federated versions of a talk
 
 TalkFolio does not own slide construction, Fediverse publication mechanics, or conference-submission state.
 
@@ -36,18 +36,18 @@ TalkFolio does not own slide construction, Fediverse publication mechanics, or c
 
 Initial TalkFolio data should be migrated from:
 
-- `C:\s\r\CognitiveInheritance\Pages\Talk-Catalog.md`
-- `C:\s\r\bss-notes\Community\Presentations\**`
-- `C:\s\r\bss-notes\Community\Presentations\README.md`
+* `C:\s\r\CognitiveInheritance\Pages\Talk-Catalog.md`
+* `C:\s\r\bss-notes\Community\Presentations\**`
+* `C:\s\r\bss-notes\Community\Presentations\README.md`
 
 The per-talk notes are especially valuable for abstracts, elevator pitches, audience notes, outlines, alternate titles, and rough ideation material.
 
 ## Additional Docs
 
-- [TalkFolio Context](CONTEXT.md)
-- [TalkFolio Integration Strategy](docs/Integration-Strategy.md)
-- [TalkFolio Schema Direction](docs/TalkSchema.md)
-- [Architecture Decision Records](docs/ADRs.md)
+* [TalkFolio Context](CONTEXT.md)
+* [TalkFolio Integration Strategy](docs/Integration-Strategy.md)
+* [TalkFolio Schema Direction](docs/TalkSchema.md)
+* [Architecture Decision Records](docs/ADRs.md)
 
 ## Feature Candidates
 
@@ -73,20 +73,20 @@ The per-talk notes are especially valuable for abstracts, elevator pitches, audi
 
 The recommended MVP should include:
 
-- file-based Talk and PresentationFamily records that match the documented schema
-- validation tooling for schema and cross-record relationships
-- migration tooling to pull structured data from the existing notes sources
-- basic catalog commands or reports for listing and filtering talks
+* file-based Talk and PresentationFamily records that match the documented schema
+* validation tooling for schema and cross-record relationships
+* migration tooling to pull structured data from the existing notes sources
+* basic catalog commands or reports for listing and filtering talks
 
 The MVP should explicitly defer:
 
-- controlled vocabulary source files for Category and TargetAudience
-- TalkCircuit-friendly export/read model for proposal submission workflows
-- rich editing UI
-- authoring scaffolds unless they fall out cheaply from the file format work
-- automated external sync
-- submission-state workflows
-- publication/content-management workflows outside TalkFolio's boundary
+* controlled vocabulary source files for Category and TargetAudience
+* TalkCircuit-friendly export/read model for proposal submission workflows
+* rich editing UI
+* authoring scaffolds unless they fall out cheaply from the file format work
+* automated external sync
+* submission-state workflows
+* publication/content-management workflows outside TalkFolio's boundary
 
 ## Status
 

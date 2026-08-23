@@ -8,8 +8,8 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 
 **Decision:** Proposal copy lives inline on the Talk record as `ProposalCopyItems`, a list of typed items, each with:
 
-- `Type`: the copy classification (for example `Abstract`, `ElevatorPitch`, `ShortVersion`, `CommitteeNotes`, `AudienceNotes`, `AlternateTitleCandidates`)
-- `Copy`: the proposal text stored as a YAML `|-` literal block
+* `Type`: the copy classification (for example `Abstract`, `ElevatorPitch`, `ShortVersion`, `CommitteeNotes`, `AudienceNotes`, `AlternateTitleCandidates`)
+* `Copy`: the proposal text stored as a YAML `|-` literal block
 
 **Rationale:** A typed array keeps proposal text extensible — new copy types can be introduced without changing the Talk schema — while keeping the copy inline on the record for a straightforward model.
 
@@ -21,17 +21,17 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 
 **Decision:** The Talk schema includes a `RelatedContent` list of typed companion items, each with:
 
-- `Type` (for example `BlogPost`, `Video`, `Article`, `Essay`, `Notebook`)
-- `Title`
-- `Url` (optional)
-- `Notes`
+* `Type` (for example `BlogPost`, `Video`, `Article`, `Essay`, `Notebook`)
+* `Title`
+* `Url` (optional)
+* `Notes`
 
 **Rules:**
 
-- RelatedContent is associated with the Talk concept, not with a specific LiquidVictor SlideDeck.
-- Multiple items of the same `Type` are allowed.
-- A RelatedContent item has no separate `Id`; when present, `Url` is the canonical identifier.
-- `Summary`, `Status`, and `PublishedAt` are intentionally excluded.
+* RelatedContent is associated with the Talk concept, not with a specific LiquidVictor SlideDeck.
+* Multiple items of the same `Type` are allowed.
+* A RelatedContent item has no separate `Id`; when present, `Url` is the canonical identifier.
+* `Summary`, `Status`, and `PublishedAt` are intentionally excluded.
 
 **Rationale:** TalkFolio needs a generic way to reference companion material for discovery, navigation, and finding content tied to a talk, without becoming a content-management system. The content lifecycle remains in the domain that owns the content (for example, CognitiveInheritance for blog posts), which may live outside the TalkFolio repo.
 
@@ -43,9 +43,9 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 
 **Decision:** PresentationFamily remains a separate entity, but the relationship is owned by the Talk:
 
-- Each Talk carries a nested `PresentationFamily` object with `Id` and `Variant` (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`). A talk with no family omits the object.
-- The PresentationFamily entity is just `Id`, `Name`, and `Notes`; it does not list members. Membership is discovered by querying Talks by `PresentationFamily.Id`.
-- `CanonicalTalkId` is removed. A family is not required to have a canonical talk; when one exists, "canonical" is a `Variant` value on the Talk, not a structural field on the family.
+* Each Talk carries a nested `PresentationFamily` object with `Id` and `Variant` (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`). A talk with no family omits the object.
+* The PresentationFamily entity is just `Id`, `Name`, and `Notes`; it does not list members. Membership is discovered by querying Talks by `PresentationFamily.Id`.
+* `CanonicalTalkId` is removed. A family is not required to have a canonical talk; when one exists, "canonical" is a `Variant` value on the Talk, not a structural field on the family.
 
 **Rationale:** Single-direction ownership matches the existing Talk → SlideDeckIds reference pattern and avoids duplicated references (Talk → family and family → talks) drifting out of sync. Variant identity belongs to the talk, and canonical status is a classification, not structure. Encapsulating `Id` and `Variant` in one object keeps family membership cohesive rather than flat fields on the Talk root.
 
@@ -117,10 +117,10 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 
 **Decision:** TalkFolio keeps the model structured wherever reasonable. The only intentionally unstructured Talk fields are the narrative/context fields used for authored prose and commentary:
 
-- `ProposalCopyItems[].Copy`
-- `IdeationNotes`
-- `PresentationFamily.Notes`
-- `RelatedContent[].Notes`
+* `ProposalCopyItems[].Copy`
+* `IdeationNotes`
+* `PresentationFamily.Notes`
+* `RelatedContent[].Notes`
 
 **Rationale:** Structured fields improve consistency, filtering, and downstream tooling. The remaining prose fields exist specifically to preserve authored language, explanatory context, and editorial notes that do not fit cleanly into a rigid structure.
 
@@ -134,10 +134,10 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 
 **Rules:**
 
-- The initial persistence adapter may be file-based and YAML-backed.
-- Application and domain logic depend on repository contracts, not on file-system details.
-- The canonical identity of a Talk or PresentationFamily remains its `Id`, not its file name or path.
-- Swapping the file-based adapter for a database-backed adapter should not require redesigning the domain model.
+* The initial persistence adapter may be file-based and YAML-backed.
+* Application and domain logic depend on repository contracts, not on file-system details.
+* The canonical identity of a Talk or PresentationFamily remains its `Id`, not its file name or path.
+* Swapping the file-based adapter for a database-backed adapter should not require redesigning the domain model.
 
 **Rationale:** TalkFolio wants a file-based MVP, but it should not couple the rest of the product to that storage choice. A repository boundary keeps the model portable and makes future storage changes, such as moving to a database, far easier.
 
@@ -151,13 +151,12 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 
 **Rules:**
 
-- Production-like or maintained talk catalogs should not be assumed to live inside this repo.
-- The implementation must accept a configurable data root rather than hard-coding a repository-local path.
-- This repo may include dedicated test repositories or fixture datasets for automated tests, local development, and validation scenarios.
-- The test datasets exist to support product validation, not to define the long-term location of maintained catalog data.
+* Production-like or maintained talk catalogs should not be assumed to live inside this repo.
+* The implementation must accept a configurable data root rather than hard-coding a repository-local path.
+* This repo may include dedicated test repositories or fixture datasets for automated tests, local development, and validation scenarios.
+* The test datasets exist to support product validation, not to define the long-term location of maintained catalog data.
 
 **Rationale:** The product code and the talk catalog have different lifecycles. Keeping the maintained catalog generally external preserves independent versioning and reduces coupling between implementation work and content maintenance.
-
 
 ## ADR-013: Configuration uses standard .NET precedence with in-memory overrides at the top
 
