@@ -134,6 +134,10 @@ For file-backed storage, the data root should be configurable and will generally
 
 Record identity belongs to the data itself, not to the storage path. The canonical identity remains the record `Id`; file names and directory layout are infrastructure concerns that may change without changing the domain contract.
 
+Configuration precedence follows the standard .NET pattern: JSON configuration files are loaded first, environment variables override file values, and in-memory configuration supplied by tests or host-specific bootstrap logic is applied last. This makes operational overrides easy to apply without changing code, while tests can intentionally force settings to ensure deterministic behavior.
+
+The data-root for a file-backed catalog should therefore be supplied through the normal configuration system rather than being hard-coded. In practice, default values live in JSON config files, environment variables provide deployment-specific overrides, and test code can provide in-memory values when an individual test needs to override everything else.
+
 ### Integration boundaries
 
 The main integration surfaces are intentionally narrow:

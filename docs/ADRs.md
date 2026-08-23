@@ -158,4 +158,21 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 
 **Rationale:** The product code and the talk catalog have different lifecycles. Keeping the maintained catalog generally external preserves independent versioning and reduces coupling between implementation work and content maintenance.
 
+
+## ADR-013: Configuration uses standard .NET precedence with in-memory overrides at the top
+
+**Status:** Decided
+
+**Decision:** TalkFolio configuration follows the standard .NET configuration precedence: JSON files load first, environment variables override file-based values, and in-memory configuration provided by tests or host bootstrap code is applied last so it can override all other sources.
+
+**Rules:**
+
+* JSON configuration provides the baseline defaults for the product.
+* Environment variables are the operational override layer for deployment-specific settings.
+* In-memory configuration is reserved for test-time or bootstrap-time overrides where the caller intentionally wants a value to win.
+* If command-line configuration is introduced later, it should sit above environment variables and file values.
+
+**Rationale:** This is the conventional .NET configuration model and keeps the app behavior predictable across local development, deployed environments, and automated tests. It also preserves a clean separation between checked-in defaults, environment-specific deployment values, and test-specific overrides.
+
+**Consequences:** The data root, repository selection, and related runtime settings should all be supplied through the configuration system rather than as hard-coded constants. Test configuration can safely override files and environment variables without changing the production configuration model.
 **Consequences:** Bootstrap work must define how the configurable root is supplied and how test repositories are organized. The product cannot assume that a checked-in repo-local catalog is the default operating mode.

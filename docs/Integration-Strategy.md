@@ -114,8 +114,9 @@ Expected migration mapping:
 ## Open Questions
 
 * What exact on-disk directory layout should a file-backed repository use for Talks and PresentationFamilies?
-- What file-naming convention should a file-backed repository use for stable, readable records?
-- How should the configurable data-root path be supplied at runtime (for example, CLI option, config file, environment variable, or a combination)?
+* What file-naming convention should a file-backed repository use for stable, readable records?
+* How should the configurable data-root path be supplied at runtime (for example, CLI option, config file, environment variable, or a combination)?
+* What configuration precedence should be used in the standard .NET pipeline: JSON files first, environment variables second, and in-memory settings last?
 
 ## MVP Implementation Plan
 

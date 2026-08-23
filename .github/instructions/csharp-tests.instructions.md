@@ -76,7 +76,7 @@ Create base classes when multiple test classes share setup logic. Name base clas
 Using NSubstitute:
 
 ```csharp
-public class EndpointDataProcessorTests
+public class EndpointDataProcessor_ProcessDataAsync_Should
 {
     private readonly HttpClient _httpClient;
     private readonly MockHttpMessageHandler _httpHandler = new();
