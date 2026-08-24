@@ -61,6 +61,49 @@ public sealed class TalkCatalogRepository_LoadAsync_Should : IDisposable
     }
 
     [Fact]
+    public async Task ThrowInvalidOperationException_WhenDataRootIsNotConfigured()
+    {
+        var target = new TalkCatalogRepository(Options.Create(new TalkCatalogOptions()));
+
+        var actual = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => target.LoadAsync(CancellationToken.None));
+
+        Assert.Equal("The repository data root is not configured.", actual.Message);
+    }
+
+    [Fact]
+    public async Task ReturnEmptyCatalog_WhenTalksDirectoryIsMissing()
+    {
+        var repositoryRoot = Path.Combine(_dataRoot, "no-talks-directory");
+        Directory.CreateDirectory(repositoryRoot);
+        var target = new TalkCatalogRepository(
+            Options.Create(new TalkCatalogOptions
+            {
+                DataRoot = repositoryRoot,
+            }));
+
+        var actual = await target.LoadAsync(CancellationToken.None);
+
+        Assert.Empty(actual.Talks);
+    }
+
+    [Fact]
+    public async Task ThrowDirectoryNotFoundException_WhenDataRootDoesNotExist()
+    {
+        var repositoryRoot = Path.Combine(_dataRoot, "missing-root");
+        var target = new TalkCatalogRepository(
+            Options.Create(new TalkCatalogOptions
+            {
+                DataRoot = repositoryRoot,
+            }));
+
+        var actual = await Assert.ThrowsAsync<DirectoryNotFoundException>(
+            () => target.LoadAsync(CancellationToken.None));
+
+        Assert.Contains(repositoryRoot, actual.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ThrowDuplicateTalkIdException_WhenLaterFilesResolveToSameId()
     {
         // Arrange
@@ -243,6 +286,52 @@ public sealed class TalkCatalogRepository_LoadAsync_Should : IDisposable
     }
 
     [Fact]
+    public async Task ThrowMissingTalkIdException_WhenTalkRecordDoesNotSupplyId()
+    {
+        // Arrange
+        var repositoryRoot = Path.Combine(Path.GetTempPath(), $"talkfolio-missing-id-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(repositoryRoot);
+        var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
+        var talkFilePath = Path.Combine(talksDirectory.FullName, "missing-id.yaml");
+
+        await File.WriteAllTextAsync(
+            talkFilePath,
+            """
+            Title: Missing Identifier Talk
+            Category: Leadership & Community
+            Tags:
+              - missing-id
+            PresentationFamily:
+              Name: Missing Identifier Family
+              Variant: Canonical
+            LifecycleStatus: Active
+            """);
+
+        try
+        {
+            var target = new TalkCatalogRepository(
+                Options.Create(new TalkCatalogOptions
+                {
+                    DataRoot = repositoryRoot,
+                }));
+
+            // Act
+            var actual = await Assert.ThrowsAsync<MissingTalkIdException>(
+                () => target.LoadAsync(CancellationToken.None));
+
+            // Assert
+            Assert.Equal(talkFilePath, actual.FilePath);
+        }
+        finally
+        {
+            if (Directory.Exists(repositoryRoot))
+            {
+                Directory.Delete(repositoryRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public async Task EmitBoundaryLogs_WhenLoadingCatalog()
     {
         // Arrange
@@ -362,4 +451,3 @@ public sealed class TalkCatalogRepository_LoadAsync_Should : IDisposable
         return repositoryRoot;
     }
 }
-

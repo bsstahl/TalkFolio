@@ -42,4 +42,7 @@ internal static partial class TalkCatalogRepositoryLog
 
     [LoggerMessage(EventId = 13, Level = LogLevel.Error, Message = "Catalog load failed because duplicate talk title and variant were found for Title '{Title}' and Variant '{Variant}' in {DuplicateFilePath}. First seen in {FirstFilePath}.")]
     public static partial void DuplicateTalkTitleVariant(ILogger logger, Exception exception, string title, string variant, string duplicateFilePath, string firstFilePath);
+
+    [LoggerMessage(EventId = 14, Level = LogLevel.Error, Message = "Catalog load failed because talk file {FilePath} is missing required Id.")]
+    public static partial void TalkFileMissingRequiredId(ILogger logger, Exception exception, string filePath);
 }

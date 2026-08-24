@@ -2,6 +2,7 @@ namespace TalkFolio.Api;
 
 using TalkFolio.Data.YamlFile;
 using TalkFolio.Interfaces;
+using TalkFolio.Services;
 
 #pragma warning disable CA1052, CA1515
 public partial class Program
@@ -15,6 +16,7 @@ public partial class Program
             .BindConfiguration("TalkCatalog");
 
         builder.Services.AddSingleton<ITalkCatalogRepository, TalkCatalogRepository>();
+        builder.Services.AddSingleton<TalkCatalogService>();
 
         var app = builder.Build();
 
@@ -23,13 +25,13 @@ public partial class Program
         app.MapGet(
             "/talks",
             async Task<IResult> (
-                ITalkCatalogRepository repository,
+                TalkCatalogService service,
                 ILoggerFactory loggerFactory,
                 CancellationToken cancellationToken) =>
             {
                 var logger = loggerFactory.CreateLogger("TalkFolio.Api.TalksEndpoint");
                 ProgramLog.HandlingGetTalksRequest(logger);
-                var catalog = await repository.LoadAsync(cancellationToken).ConfigureAwait(false);
+                var catalog = await service.LoadAsync(cancellationToken).ConfigureAwait(false);
                 ProgramLog.ReturningTalksFromGetTalks(logger, catalog.Talks.Count);
 
                 if (logger.IsEnabled(LogLevel.Trace))

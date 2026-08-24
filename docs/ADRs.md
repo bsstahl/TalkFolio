@@ -204,6 +204,7 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 * Malformed YAML throws `MalformedTalkYamlException`.
 * Duplicate talk IDs throw `DuplicateTalkIdException`.
 * Duplicate `(Title, PresentationFamily.Variant)` pairs throw `DuplicateTalkTitleVariantException`.
+* `PresentationFamily.Name` does not participate in the duplicate-talk uniqueness key.
 * These exceptions are logged as load failures and then rethrown so upstream callers can handle each failure type distinctly.
 * Catalog loads only succeed when all talk files satisfy the repository invariants.
 

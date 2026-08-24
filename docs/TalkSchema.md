@@ -42,7 +42,7 @@ Tags:
   - embeddings
   - knowledge-graph
 PresentationFamily:
-  Id: 8ccdf8b8-fd2c-4d41-9fe0-32fade0f41dc
+  Name: RAG Deep Dive
   Variant: Canonical
 LifecycleStatus: Active
 ProposalCopyItems:
@@ -103,7 +103,7 @@ The current best-fit set of core fields is:
 * AlternateTitles: list of marketing or branding variants
 * Category: coarse top-level selection bucket from a controlled list that can expand over time
 * Tags: topic labels for overlap and CFP matching; free-form strings constrained to alphanumerics and `-`
-* PresentationFamily: family membership object with `Id` and `Variant` (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`)
+* PresentationFamily: family membership object with `Name` and `Variant` (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`)
 * LifecycleStatus: concept-level state
 * ProposalCopyItems: typed array of inline proposal copy blocks, each with `Type` and `Copy` (`|-` literal block)
 * TargetAudience: list of audience descriptors drawn from a controlled list that can expand over time
@@ -189,6 +189,7 @@ PresentationFamily:
 * PresentationFamily is not a taxonomy node.
 * It is a grouping concept, not a category hierarchy.
 * Family names are treated as stable identifiers for the grouping, not display-only text.
+* Catalog duplicate detection keys on Talk `Title` + `PresentationFamily.Variant` only; `PresentationFamily.Name` does not participate in that uniqueness check.
 * Two talks in the same PresentationFamily should not be co-submitted to the same conference.
 * TalkCircuit enforces this rule at submission time.
 * TalkCircuit can find a talk's family members by querying Talks that share its `PresentationFamily.Name`.
@@ -329,12 +330,13 @@ The working baseline for the first TalkFolio implementation is:
 * Talk entity with GUID `Id` and canonical field set
 * controlled-but-extensible Category list
 * Tags as free-form, hyphen-safe strings
-* presentation family with the Talk owning membership via a nested `PresentationFamily` object (`Id` + `Variant`)
+* presentation family with the Talk owning membership via a nested `PresentationFamily` object (`Name` + `Variant`)
 * concept lifecycle of Ideation | Active | Retired
 * references to SlideDeckIds and optional public publication references
 * proposal copy stored inline as `ProposalCopyItems` (typed items with `|-` literal-block copy)
 * companion material referenced via `RelatedContent` (typed, talk-level, lightweight references)
 * flexible talk-level flags via `Flags`
 * unstructured prose limited to `ProposalCopyItems[].Copy`, `IdeationNotes`, `PresentationFamily.Notes`, and `RelatedContent[].Notes`
+* duplicate-talk validation keys on `Title` + `PresentationFamily.Variant` only; `PresentationFamily.Name` is not part of that uniqueness rule
 
 This gives a clean, minimal schema that matches the domain boundary without pulling in deck-building or submission-state concerns.

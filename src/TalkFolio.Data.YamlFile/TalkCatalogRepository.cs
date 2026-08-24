@@ -4,12 +4,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using TalkFolio.Data.YamlFile.Serialization;
-using DomainPresentationFamily = TalkFolio.Entities.PresentationFamily;
-using DomainProposalCopyItem = TalkFolio.Entities.ProposalCopyItem;
-using DomainPublicPresentationReference = TalkFolio.Entities.PublicPresentationReference;
-using DomainRelatedContentItem = TalkFolio.Entities.RelatedContentItem;
-using DomainTalk = TalkFolio.Entities.Talk;
-using DomainTalkCatalog = TalkFolio.Entities.TalkCatalog;
 using TalkFolio.Interfaces;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
@@ -28,7 +22,7 @@ public sealed class TalkCatalogRepository(
     private readonly IOptions<TalkCatalogOptions> _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <inheritdoc/>
-    public async Task<DomainTalkCatalog> LoadAsync(CancellationToken cancellationToken = default)
+    public async Task<TalkFolio.Entities.TalkCatalog> LoadAsync(CancellationToken cancellationToken = default)
     {
         TalkCatalogRepositoryLog.LoadingCatalog(_logger);
 
@@ -51,10 +45,10 @@ public sealed class TalkCatalogRepository(
         var talks = await LoadTalksAsync(talksDirectory, cancellationToken).ConfigureAwait(false);
         TalkCatalogRepositoryLog.LoadedCatalog(_logger, talks.Count);
 
-        return new DomainTalkCatalog(talks);
+        return new TalkFolio.Entities.TalkCatalog(talks);
     }
 
-    private async Task<IReadOnlyList<DomainTalk>> LoadTalksAsync(string talksDirectory, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<TalkFolio.Entities.Talk>> LoadTalksAsync(string talksDirectory, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(talksDirectory))
         {
@@ -62,7 +56,7 @@ public sealed class TalkCatalogRepository(
             return [];
         }
 
-        var talks = new List<DomainTalk>();
+        var talks = new List<TalkFolio.Entities.Talk>();
         var seenTalkIds = new Dictionary<Guid, string>();
         var seenTitleVariants = new Dictionary<TalkTitleVariantKey, string>();
         var files = Directory.EnumerateFiles(talksDirectory, "*.*", SearchOption.TopDirectoryOnly)
@@ -77,6 +71,13 @@ public sealed class TalkCatalogRepository(
             var payload = DeserializeTalk(yaml, file);
 
             TalkCatalogRepositoryLog.DeserializedTalkPayload(_logger, payload.Id, payload.Title, file);
+
+            if (payload.Id == Guid.Empty)
+            {
+                var missingTalkIdException = MissingTalkIdException.ForFilePath(file);
+                TalkCatalogRepositoryLog.TalkFileMissingRequiredId(_logger, missingTalkIdException, file);
+                throw missingTalkIdException;
+            }
 
             if (seenTalkIds.TryGetValue(payload.Id, out var firstTalkIdFilePath))
             {
@@ -118,9 +119,9 @@ public sealed class TalkCatalogRepository(
         return talks.AsReadOnly();
     }
 
-    private static DomainTalk MapTalk(TalkRecord source)
+    private static TalkFolio.Entities.Talk MapTalk(TalkRecord source)
     {
-        return new DomainTalk(
+        return new TalkFolio.Entities.Talk(
             Id: source.Id,
             Title: source.Title,
             AlternateTitles: source.AlternateTitles ?? [],
@@ -128,20 +129,20 @@ public sealed class TalkCatalogRepository(
             Tags: source.Tags ?? [],
             LifecycleStatus: source.LifecycleStatus ?? string.Empty,
             TargetAudience: source.TargetAudience ?? [],
-            PresentationFamily: source.PresentationFamily is null ? null : new DomainPresentationFamily(
+            PresentationFamily: source.PresentationFamily is null ? null : new TalkFolio.Entities.PresentationFamily(
                 source.PresentationFamily.Name ?? string.Empty,
                 source.PresentationFamily.Variant ?? string.Empty),
             SlideDeckIds: source.SlideDeckIds ?? [],
             ProposalCopyItems: source.ProposalCopyItems is null
                 ? []
                 : source.ProposalCopyItems
-                    .Select(static item => new DomainProposalCopyItem(item.Type ?? string.Empty, item.Copy ?? string.Empty))
+                    .Select(static item => new TalkFolio.Entities.ProposalCopyItem(item.Type ?? string.Empty, item.Copy ?? string.Empty))
                     .ToList()
                     .AsReadOnly(),
             PublicPresentationReferences: source.PublicPresentationReferences is null
                 ? []
                 : source.PublicPresentationReferences
-                    .Select(static item => new DomainPublicPresentationReference(
+                    .Select(static item => new TalkFolio.Entities.PublicPresentationReference(
                         item.Source ?? string.Empty,
                         item.Url,
                         item.PublicId))
@@ -150,7 +151,7 @@ public sealed class TalkCatalogRepository(
             RelatedContent: source.RelatedContent is null
                 ? []
                 : source.RelatedContent
-                    .Select(static item => new DomainRelatedContentItem(
+                    .Select(static item => new TalkFolio.Entities.RelatedContentItem(
                         item.Type ?? string.Empty,
                         item.Title ?? string.Empty,
                         item.Url,
