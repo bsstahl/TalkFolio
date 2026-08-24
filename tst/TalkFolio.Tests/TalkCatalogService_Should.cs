@@ -5,10 +5,10 @@ using TalkFolio.Entities;
 using TalkFolio.Interfaces;
 using TalkFolio.Services;
 
-public sealed class TalkCatalogService_Should
+public sealed class TalkCatalogService_LoadAsync_Should
 {
     [Fact]
-    public async Task ReturnRepositoryCatalog_WhenLoadingAsync()
+    public async Task ReturnRepositoryCatalog_WhenLoading()
     {
         var repository = Substitute.For<ITalkCatalogRepository>();
         var expected = new TalkCatalog([]);
