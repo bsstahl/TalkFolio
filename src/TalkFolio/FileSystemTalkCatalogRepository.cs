@@ -75,6 +75,7 @@ public sealed class FileSystemTalkCatalogRepository(
         }
 
         var talks = new List<TalkRecord>();
+        var seenTalkIds = new HashSet<Guid>();
         var files = Directory.EnumerateFiles(talksDirectory, "*.*", SearchOption.TopDirectoryOnly)
             .Where(static file => file.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))
             .OrderBy(static file => file, StringComparer.OrdinalIgnoreCase);
@@ -106,6 +107,15 @@ public sealed class FileSystemTalkCatalogRepository(
                 payload.Id,
                 payload.Title,
                 file);
+            if (!seenTalkIds.Add(payload.Id))
+            {
+                _logger.LogWarning(
+                    "Skipping talk file {FilePath} because TalkId {TalkId} duplicates a previously loaded talk record.",
+                    file,
+                    payload.Id);
+                continue;
+            }
+
             talks.Add(MapTalk(payload));
             _logger.LogTrace("Mapped talk record {TalkId} from {FilePath}.", payload.Id, file);
         }

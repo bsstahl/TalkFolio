@@ -131,6 +131,90 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
     }
 
     [Fact]
+    public async Task SkipDuplicateTalkIds_WhenLaterFilesResolveToSameId()
+    {
+        // Arrange
+        var repositoryRoot = Path.Combine(Path.GetTempPath(), $"talkfolio-duplicate-ids-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(repositoryRoot);
+        var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
+        var duplicateId = Guid.Parse("8f9eb83f-05c4-4e30-8e98-f00976f01ca0");
+
+        File.WriteAllText(
+            Path.Combine(talksDirectory.FullName, "a-first-talk.yaml"),
+            $$"""
+            Id: {{duplicateId}}
+            Title: First Talk
+            Category: Leadership & Community
+            Tags:
+              - first
+            PresentationFamily:
+              Name: Duplicate Family
+              Variant: Canonical
+            LifecycleStatus: Active
+            """);
+
+        File.WriteAllText(
+            Path.Combine(talksDirectory.FullName, "b-second-talk.yaml"),
+            $$"""
+            Id: {{duplicateId}}
+            Title: Second Talk
+            Category: Leadership & Community
+            Tags:
+              - second
+            PresentationFamily:
+              Name: Duplicate Family
+              Variant: Workshop
+            LifecycleStatus: Active
+            """);
+
+        File.WriteAllText(
+            Path.Combine(talksDirectory.FullName, "c-third-talk.yaml"),
+            $$"""
+            Id: {{duplicateId}}
+            Title: Third Talk
+            Category: Leadership & Community
+            Tags:
+              - third
+            PresentationFamily:
+              Name: Duplicate Family
+              Variant: DeepDive
+            LifecycleStatus: Active
+            """);
+
+        try
+        {
+            var logger = Substitute.For<ILogger<FileSystemTalkCatalogRepository>>();
+            var target = new FileSystemTalkCatalogRepository(
+                Options.Create(new TalkCatalogRepositoryOptions
+                {
+                    DataRoot = repositoryRoot,
+                }),
+                logger);
+
+            // Act
+            var actual = await target.LoadAsync(CancellationToken.None);
+
+            // Assert
+            var talk = Assert.Single(actual.Talks);
+            Assert.Equal(duplicateId, talk.Id);
+            Assert.Equal("First Talk", talk.Title);
+            var duplicateWarnings = logger.ReceivedCalls()
+                .Count(static call => call.GetArguments()[0] is LogLevel level
+                    && level == LogLevel.Warning
+                    && call.GetArguments()[2]?.ToString()?.Contains("duplicate", StringComparison.OrdinalIgnoreCase) == true
+                    && call.GetArguments()[2]?.ToString()?.Contains("TalkId", StringComparison.Ordinal) == true);
+            Assert.Equal(2, duplicateWarnings);
+        }
+        finally
+        {
+            if (Directory.Exists(repositoryRoot))
+            {
+                Directory.Delete(repositoryRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public async Task EmitBoundaryLogs_WhenLoadingCatalog()
     {
         // Arrange
