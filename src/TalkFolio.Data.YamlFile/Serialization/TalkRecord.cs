@@ -1,4 +1,4 @@
-namespace TalkFolio.Data.YamlFile;
+namespace TalkFolio.Data.YamlFile.Serialization;
 
 using System.Diagnostics.CodeAnalysis;
 

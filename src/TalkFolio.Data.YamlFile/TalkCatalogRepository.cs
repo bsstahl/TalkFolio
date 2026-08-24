@@ -3,6 +3,7 @@ namespace TalkFolio.Data.YamlFile;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using TalkFolio.Data.YamlFile.Serialization;
 using DomainPresentationFamily = TalkFolio.Entities.PresentationFamily;
 using DomainProposalCopyItem = TalkFolio.Entities.ProposalCopyItem;
 using DomainPublicPresentationReference = TalkFolio.Entities.PublicPresentationReference;

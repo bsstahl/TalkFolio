@@ -1,18 +1,16 @@
-namespace TalkFolio.Data.YamlFile;
+namespace TalkFolio.Data.YamlFile.Serialization;
 
 using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
-/// Raw projection of related companion content.
+/// Raw projection of a public presentation reference.
 /// </summary>
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used by YamlDotNet reflection deserialization.")]
-internal sealed class RelatedContentItem
+internal sealed class PublicPresentationReference
 {
-    public string? Type { get; set; }
-
-    public string? Title { get; set; }
+    public string? Source { get; set; }
 
     public string? Url { get; set; }
 
-    public string? Notes { get; set; }
+    public string? PublicId { get; set; }
 }
