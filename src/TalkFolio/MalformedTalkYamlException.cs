@@ -9,7 +9,7 @@ public sealed class MalformedTalkYamlException : TalkCatalogLoadException
     /// Initializes a new instance of the <see cref="MalformedTalkYamlException"/> class.
     /// </summary>
     public MalformedTalkYamlException()
-        : this(string.Empty, new InvalidOperationException("Talk file content could not be parsed."))
+        : this("Talk file content could not be parsed.", new InvalidOperationException("Talk file content could not be parsed."))
     {
     }
 
