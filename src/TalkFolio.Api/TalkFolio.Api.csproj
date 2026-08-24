@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TalkFolio\TalkFolio.csproj" />
+    <ProjectReference Include="..\TalkFolio.Data.YamlFile\TalkFolio.Data.YamlFile.csproj" />
   </ItemGroup>
 
 </Project>

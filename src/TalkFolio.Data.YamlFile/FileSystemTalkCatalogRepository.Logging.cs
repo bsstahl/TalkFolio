@@ -1,4 +1,4 @@
-namespace TalkFolio;
+namespace TalkFolio.Data.YamlFile;
 
 using Microsoft.Extensions.Logging;
 

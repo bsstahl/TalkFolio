@@ -1,7 +1,8 @@
-namespace TalkFolio.Tests;
+namespace TalkFolio.Data.YamlFile.Tests;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TalkFolio.Data.YamlFile;
 using NSubstitute;
 
 public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposable

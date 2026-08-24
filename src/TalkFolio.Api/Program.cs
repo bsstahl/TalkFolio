@@ -1,5 +1,8 @@
 namespace TalkFolio.Api;
 
+using TalkFolio.Data.YamlFile;
+using TalkFolio.Interfaces;
+
 #pragma warning disable CA1052, CA1515
 public partial class Program
 {

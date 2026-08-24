@@ -1,8 +1,10 @@
-namespace TalkFolio;
+namespace TalkFolio.Data.YamlFile;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using TalkFolio.Entities;
+using TalkFolio.Interfaces;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
@@ -46,7 +48,7 @@ public sealed class FileSystemTalkCatalogRepository(
         return new TalkCatalog(talks);
     }
 
-    private async Task<IReadOnlyList<TalkRecord>> LoadTalksAsync(string talksDirectory, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<Talk>> LoadTalksAsync(string talksDirectory, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(talksDirectory))
         {
@@ -54,7 +56,7 @@ public sealed class FileSystemTalkCatalogRepository(
             return [];
         }
 
-        var talks = new List<TalkRecord>();
+        var talks = new List<Talk>();
         var seenTalkIds = new Dictionary<Guid, string>();
         var seenTitleVariants = new Dictionary<TalkTitleVariantKey, string>();
         var files = Directory.EnumerateFiles(talksDirectory, "*.*", SearchOption.TopDirectoryOnly)
@@ -110,9 +112,9 @@ public sealed class FileSystemTalkCatalogRepository(
         return talks.AsReadOnly();
     }
 
-    private static TalkRecord MapTalk(YamlTalkRecord source)
+    private static Talk MapTalk(YamlTalkRecord source)
     {
-        return new TalkRecord(
+        return new Talk(
             Id: source.Id,
             Title: source.Title,
             AlternateTitles: source.AlternateTitles ?? [],
@@ -120,7 +122,7 @@ public sealed class FileSystemTalkCatalogRepository(
             Tags: source.Tags ?? [],
             LifecycleStatus: source.LifecycleStatus ?? string.Empty,
             TargetAudience: source.TargetAudience ?? [],
-            PresentationFamily: source.PresentationFamily is null ? null : new PresentationFamilyReference(
+            PresentationFamily: source.PresentationFamily is null ? null : new PresentationFamily(
                 source.PresentationFamily.Name ?? string.Empty,
                 source.PresentationFamily.Variant ?? string.Empty),
             SlideDeckIds: source.SlideDeckIds ?? [],

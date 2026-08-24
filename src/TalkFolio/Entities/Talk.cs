@@ -1,7 +1,7 @@
-namespace TalkFolio;
+namespace TalkFolio.Entities;
 
 /// <summary>
-/// Represents a canonical Talk record in the TalkFolio read model.
+/// Represents a canonical Talk in the TalkFolio read model.
 /// </summary>
 /// <param name="Id">The unique identifier for the talk.</param>
 /// <param name="Title">The title of the talk.</param>
@@ -19,7 +19,7 @@ namespace TalkFolio;
 /// <param name="IdeationNotes">Optional ideation notes for the talk.</param>
 /// <param name="CreatedAt">The date the talk record was created.</param>
 /// <param name="UpdatedAt">The date the talk record was last updated.</param>
-public sealed record TalkRecord(
+public sealed record Talk(
     Guid Id,
     string Title,
     IReadOnlyList<string> AlternateTitles,
@@ -27,7 +27,7 @@ public sealed record TalkRecord(
     IReadOnlyList<string> Tags,
     string LifecycleStatus,
     IReadOnlyList<string> TargetAudience,
-    PresentationFamilyReference? PresentationFamily,
+    PresentationFamily? PresentationFamily,
     IReadOnlyList<Guid> SlideDeckIds,
     IReadOnlyList<ProposalCopyItem> ProposalCopyItems,
     IReadOnlyList<PublicPresentationReference> PublicPresentationReferences,

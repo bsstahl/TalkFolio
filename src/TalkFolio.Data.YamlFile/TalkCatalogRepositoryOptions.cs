@@ -1,4 +1,4 @@
-namespace TalkFolio;
+namespace TalkFolio.Data.YamlFile;
 
 /// <summary>
 /// Configures the file-backed repository used to read TalkFolio data.

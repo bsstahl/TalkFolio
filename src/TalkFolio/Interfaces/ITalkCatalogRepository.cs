@@ -1,7 +1,9 @@
-namespace TalkFolio;
+namespace TalkFolio.Interfaces;
+
+using TalkFolio.Entities;
 
 /// <summary>
-/// Provides a repository that loads the TalkFolio catalog from YAML files on disk.
+/// Provides a repository that loads the TalkFolio catalog from a data source.
 /// </summary>
 public interface ITalkCatalogRepository
 {

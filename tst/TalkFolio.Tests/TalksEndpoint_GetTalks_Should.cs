@@ -3,6 +3,7 @@ namespace TalkFolio.Tests;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
+using TalkFolio.Entities;
 
 public sealed class TalksEndpoint_GetTalks_Should : IDisposable
 {
@@ -37,7 +38,7 @@ public sealed class TalksEndpoint_GetTalks_Should : IDisposable
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var talks = await response.Content.ReadFromJsonAsync<List<TalkRecord>>(CancellationToken.None);
+        var talks = await response.Content.ReadFromJsonAsync<List<Talk>>(CancellationToken.None);
         var talk = Assert.Single(talks!);
         Assert.Equal(Guid.Parse("6c8d4d27-9cc7-4c41-9bf8-19e55758e7cc"), talk.Id);
         Assert.Equal("Finding TP for Your People's Bungholes", talk.Title);

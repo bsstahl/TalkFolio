@@ -1,4 +1,4 @@
-namespace TalkFolio;
+namespace TalkFolio.Entities;
 
 /// <summary>
 /// Represents lightweight companion material related to a talk.
