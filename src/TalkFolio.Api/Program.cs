@@ -1,5 +1,6 @@
 namespace TalkFolio.Api;
 
+#pragma warning disable CA1052, CA1515
 public partial class Program
 {
     public static WebApplication BuildApp(string[] args)
@@ -24,12 +25,16 @@ public partial class Program
                 CancellationToken cancellationToken) =>
             {
                 var logger = loggerFactory.CreateLogger("TalkFolio.Api.TalksEndpoint");
-                logger.LogInformation("Handling GET /talks request.");
+                ProgramLog.HandlingGetTalksRequest(logger);
                 var catalog = await repository.LoadAsync(cancellationToken).ConfigureAwait(false);
-                logger.LogInformation("Returning {TalkCount} talks from GET /talks.", catalog.Talks.Count);
-                logger.LogTrace(
-                    "Returning talk payload for GET /talks with talk IDs {TalkIds}.",
-                    catalog.Talks.Select(static talk => talk.Id).ToArray());
+                ProgramLog.ReturningTalksFromGetTalks(logger, catalog.Talks.Count);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    var talkIds = catalog.Talks.Select(static talk => talk.Id).ToArray();
+                    ProgramLog.ReturningTalkPayloadForGetTalks(logger, talkIds);
+                }
+
                 return Results.Ok(catalog.Talks);
             });
 
@@ -41,3 +46,4 @@ public partial class Program
         BuildApp(args).Run();
     }
 }
+#pragma warning restore CA1052, CA1515

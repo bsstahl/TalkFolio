@@ -18,22 +18,22 @@ public sealed class TalksEndpoint_GetTalks_Should : IDisposable
     public async Task ReturnCanonicalTalks_WhenRepositoryContainsTalkData()
     {
         // Arrange
-        var repositoryRoot = CreateRepositoryRoot();
-        using var factory = new WebApplicationFactory<TalkFolio.Api.Program>()
-            .WithWebHostBuilder(builder =>
+        var repositoryRoot = await CreateRepositoryRoot();
+        using var factoryRoot = new WebApplicationFactory<TalkFolio.Api.Program>();
+        using var factory = factoryRoot.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, configBuilder) =>
             {
-                builder.ConfigureAppConfiguration((_, configBuilder) =>
+                configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
-                    {
-                        ["TalkCatalogRepository:DataRoot"] = repositoryRoot,
-                    });
+                    ["TalkCatalogRepository:DataRoot"] = repositoryRoot,
                 });
             });
+        });
         using var client = factory.CreateClient();
 
         // Act
-        var response = await client.GetAsync("/talks", CancellationToken.None);
+        var response = await client.GetAsync(new Uri("/talks", UriKind.Relative), CancellationToken.None);
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -54,12 +54,12 @@ public sealed class TalksEndpoint_GetTalks_Should : IDisposable
         }
     }
 
-    private string CreateRepositoryRoot()
+    private async Task<string> CreateRepositoryRoot()
     {
         var repositoryRoot = Path.Combine(_dataRoot, "catalog");
         var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
 
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             Path.Combine(talksDirectory.FullName, "finding-tp-for-your-peoples-bungholes.yaml"),
             """
             Id: 6c8d4d27-9cc7-4c41-9bf8-19e55758e7cc

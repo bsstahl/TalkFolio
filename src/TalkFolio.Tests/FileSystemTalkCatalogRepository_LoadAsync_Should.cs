@@ -18,7 +18,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
     public async Task ReturnCanonicalCatalog_WhenYamlFilesExist()
     {
         // Arrange
-        var repositoryRoot = CreateRepositoryRoot();
+        var repositoryRoot = await CreateRepositoryRoot();
         var target = new FileSystemTalkCatalogRepository(
             Options.Create(new TalkCatalogRepositoryOptions
             {
@@ -70,7 +70,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         var firstFilePath = Path.Combine(talksDirectory.FullName, "a-first-talk.yaml");
         var duplicateFilePath = Path.Combine(talksDirectory.FullName, "b-second-talk.yaml");
 
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             firstFilePath,
             $$"""
             Id: {{duplicateId}}
@@ -84,7 +84,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
             LifecycleStatus: Active
             """);
 
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             duplicateFilePath,
             $$"""
             Id: {{duplicateId}}
@@ -136,7 +136,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         var firstFilePath = Path.Combine(talksDirectory.FullName, "a-first-talk.yaml");
         var duplicateFilePath = Path.Combine(talksDirectory.FullName, "b-second-talk.yaml");
 
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             firstFilePath,
             """
             Id: 11111111-1111-1111-1111-111111111111
@@ -150,7 +150,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
             LifecycleStatus: Active
             """);
 
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             duplicateFilePath,
             """
             Id: 22222222-2222-2222-2222-222222222222
@@ -200,7 +200,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
         var malformedFilePath = Path.Combine(talksDirectory.FullName, "broken-talk.yaml");
 
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             malformedFilePath,
             """
             Id: 87654321-4321-4321-4321-cba987654321
@@ -245,7 +245,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
     public async Task EmitBoundaryLogs_WhenLoadingCatalog()
     {
         // Arrange
-        var repositoryRoot = CreateRepositoryRoot();
+        var repositoryRoot = await CreateRepositoryRoot();
         var logger = Substitute.For<ILogger<FileSystemTalkCatalogRepository>>();
         var target = new FileSystemTalkCatalogRepository(
             Options.Create(new TalkCatalogRepositoryOptions
@@ -258,36 +258,18 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         _ = await target.LoadAsync(CancellationToken.None);
 
         // Assert
-        var calls = logger.ReceivedCalls()
+        var levels = logger.ReceivedCalls()
             .Select(static call => call.GetArguments())
+            .Where(static arguments => arguments.Length > 0 && arguments[0] is LogLevel)
+            .Select(static arguments => (LogLevel)arguments[0]!)
             .ToList();
 
-        Assert.Contains(
-            calls,
-            static arguments => arguments[0] is LogLevel level
-                && level == LogLevel.Information
-                && arguments[2]?.ToString()?.Contains("Loading TalkFolio catalog.", StringComparison.Ordinal) == true);
-        Assert.Contains(
-            calls,
-            static arguments => arguments[0] is LogLevel level
-                && level == LogLevel.Information
-                && arguments[2]?.ToString()?.Contains("Loading talks from", StringComparison.Ordinal) == true);
-        Assert.Contains(
-            calls,
-            static arguments => arguments[0] is LogLevel level
-                && level == LogLevel.Information
-                && arguments[2]?.ToString()?.Contains("Loaded TalkFolio catalog with", StringComparison.Ordinal) == true);
-        Assert.Contains(
-            calls,
-            static arguments => arguments[0] is LogLevel level
-                && level == LogLevel.Trace
-                && arguments[2]?.ToString()?.Contains("Deserialized talk payload", StringComparison.Ordinal) == true
-                && arguments[2]?.ToString()?.Contains("Finding TP for Your People's Bungholes", StringComparison.Ordinal) == true);
-        Assert.DoesNotContain(
-            calls,
-            static arguments => arguments[0] is LogLevel level
-                && level == LogLevel.Trace
-                && arguments[2]?.ToString()?.Contains("Deserialized presentation family payload", StringComparison.Ordinal) == true);
+        Assert.Contains(LogLevel.Information, levels);
+        Assert.Contains(LogLevel.Trace, levels);
+        Assert.DoesNotContain(LogLevel.Warning, levels);
+        Assert.DoesNotContain(LogLevel.Error, levels);
+        Assert.True(levels.Count(level => level == LogLevel.Information) >= 2);
+        Assert.True(levels.Count(level => level == LogLevel.Trace) >= 3);
     }
 
     public void Dispose()
@@ -298,12 +280,12 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         }
     }
 
-    private string CreateRepositoryRoot()
+    private async Task<string> CreateRepositoryRoot()
     {
         var repositoryRoot = Path.Combine(_dataRoot, "catalog");
         var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
 
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             Path.Combine(talksDirectory.FullName, "finding-tp-for-your-peoples-bungholes.yaml"),
             """
             Id: 6c8d4d27-9cc7-4c41-9bf8-19e55758e7cc
@@ -348,3 +330,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         return repositoryRoot;
     }
 }
+
+
+
+

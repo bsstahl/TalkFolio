@@ -1,5 +1,6 @@
 namespace TalkFolio;
 
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -43,25 +44,26 @@ public sealed class FileSystemTalkCatalogRepository(
     /// <inheritdoc/>
     public async Task<TalkCatalog> LoadAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Loading TalkFolio catalog.");
+        FileSystemTalkCatalogRepositoryLog.LoadingCatalog(_logger);
+
         var dataRoot = _options.Value.DataRoot;
         if (string.IsNullOrWhiteSpace(dataRoot))
         {
-            _logger.LogError("TalkFolio catalog load failed because DataRoot is not configured.");
+            FileSystemTalkCatalogRepositoryLog.LoadingCatalogFailedBecauseDataRootNotConfigured(_logger);
             throw new InvalidOperationException("The repository data root is not configured.");
         }
 
         if (!Directory.Exists(dataRoot))
         {
-            _logger.LogError("TalkFolio catalog load failed because DataRoot does not exist: {DataRoot}", dataRoot);
+            FileSystemTalkCatalogRepositoryLog.LoadingCatalogFailedBecauseDataRootDoesNotExist(_logger, dataRoot);
             throw new DirectoryNotFoundException($"The TalkFolio data root '{dataRoot}' does not exist.");
         }
 
         var talksDirectory = Path.Combine(dataRoot, "talks");
 
-        _logger.LogInformation("Loading talks from {Directory}.", talksDirectory);
+        FileSystemTalkCatalogRepositoryLog.LoadingTalksFrom(_logger, talksDirectory);
         var talks = await LoadTalksAsync(talksDirectory, cancellationToken).ConfigureAwait(false);
-        _logger.LogInformation("Loaded TalkFolio catalog with {TalkCount} talks.", talks.Count);
+        FileSystemTalkCatalogRepositoryLog.LoadedCatalog(_logger, talks.Count);
 
         return new TalkCatalog(talks);
     }
@@ -70,7 +72,7 @@ public sealed class FileSystemTalkCatalogRepository(
     {
         if (!Directory.Exists(talksDirectory))
         {
-            _logger.LogWarning("Talks directory does not exist: {Directory}", talksDirectory);
+            FileSystemTalkCatalogRepositoryLog.TalksDirectoryDoesNotExist(_logger, talksDirectory);
             return [];
         }
 
@@ -84,22 +86,18 @@ public sealed class FileSystemTalkCatalogRepository(
         foreach (var file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            _logger.LogTrace("Reading talk file {FilePath}.", file);
+            FileSystemTalkCatalogRepositoryLog.ReadingTalkFile(_logger, file);
             var yaml = await File.ReadAllTextAsync(file, cancellationToken).ConfigureAwait(false);
             var payload = DeserializeTalk(yaml, file);
 
-            _logger.LogTrace(
-                "Deserialized talk payload {TalkId} ({TalkTitle}) from {FilePath}.",
-                payload.Id,
-                payload.Title,
-                file);
+            FileSystemTalkCatalogRepositoryLog.DeserializedTalkPayload(_logger, payload.Id, payload.Title, file);
 
             if (seenTalkIds.TryGetValue(payload.Id, out var firstTalkIdFilePath))
             {
                 var duplicateIdException = new DuplicateTalkIdException(payload.Id, firstTalkIdFilePath, file);
-                _logger.LogError(
+                FileSystemTalkCatalogRepositoryLog.DuplicateTalkId(
+                    _logger,
                     duplicateIdException,
-                    "Catalog load failed because duplicate TalkId {TalkId} was found in {DuplicateFilePath}. First seen in {FirstFilePath}.",
                     payload.Id,
                     file,
                     firstTalkIdFilePath);
@@ -115,9 +113,9 @@ public sealed class FileSystemTalkCatalogRepository(
                     variant,
                     firstTitleVariantFilePath,
                     file);
-                _logger.LogError(
+                FileSystemTalkCatalogRepositoryLog.DuplicateTalkTitleVariant(
+                    _logger,
                     duplicateTitleVariantException,
-                    "Catalog load failed because duplicate talk title and variant were found for Title '{Title}' and Variant '{Variant}' in {DuplicateFilePath}. First seen in {FirstFilePath}.",
                     payload.Title,
                     variant,
                     file,
@@ -128,13 +126,13 @@ public sealed class FileSystemTalkCatalogRepository(
             seenTalkIds.Add(payload.Id, file);
             seenTitleVariants.Add(titleVariantKey, file);
             talks.Add(MapTalk(payload));
-            _logger.LogTrace("Mapped talk record {TalkId} from {FilePath}.", payload.Id, file);
+            FileSystemTalkCatalogRepositoryLog.MappedTalkRecord(_logger, payload.Id, file);
         }
 
         return talks.AsReadOnly();
     }
 
-    private TalkRecord MapTalk(YamlTalkRecord source)
+    private static TalkRecord MapTalk(YamlTalkRecord source)
     {
         return new TalkRecord(
             Id: source.Id,
@@ -192,20 +190,14 @@ public sealed class FileSystemTalkCatalogRepository(
         }
         catch (YamlException ex)
         {
-            var malformedTalkYamlException = new MalformedTalkYamlException(filePath, ex);
-            _logger.LogError(
-                malformedTalkYamlException,
-                "Catalog load failed because talk file {FilePath} contains malformed YAML.",
-                filePath);
+            var malformedTalkYamlException = MalformedTalkYamlException.ForFilePath(filePath, ex);
+            FileSystemTalkCatalogRepositoryLog.TalkFileMalformed(_logger, malformedTalkYamlException, filePath);
             throw malformedTalkYamlException;
         }
         catch (InvalidOperationException ex)
         {
-            var malformedTalkYamlException = new MalformedTalkYamlException(filePath, ex);
-            _logger.LogError(
-                malformedTalkYamlException,
-                "Catalog load failed because talk file {FilePath} could not be deserialized.",
-                filePath);
+            var malformedTalkYamlException = MalformedTalkYamlException.ForFilePath(filePath, ex);
+            FileSystemTalkCatalogRepositoryLog.TalkFileCouldNotBeDeserialized(_logger, malformedTalkYamlException, filePath);
             throw malformedTalkYamlException;
         }
     }
@@ -276,6 +268,7 @@ public sealed record ProposalCopyItem(string Type, string Copy);
 /// <param name="Source">The public source or platform.</param>
 /// <param name="Url">The public URL to the presentation.</param>
 /// <param name="PublicId">The public identifier used by the source.</param>
+#pragma warning disable CA1054, CA1056
 public sealed record PublicPresentationReference(string Source, string? Url, string? PublicId);
 
 /// <summary>
@@ -286,7 +279,9 @@ public sealed record PublicPresentationReference(string Source, string? Url, str
 /// <param name="Url">An optional URL to the companion material.</param>
 /// <param name="Notes">Optional notes about the companion material.</param>
 public sealed record RelatedContentItem(string Type, string Title, string? Url, string? Notes);
+#pragma warning restore CA1054, CA1056
 
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used by YamlDotNet reflection deserialization.")]
 internal sealed class YamlTalkRecord
 {
     public Guid Id { get; set; }
@@ -322,6 +317,7 @@ internal sealed class YamlTalkRecord
     public DateTimeOffset? UpdatedAt { get; set; }
 }
 
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used by YamlDotNet reflection deserialization.")]
 internal sealed class YamlPresentationFamilyReference
 {
     public string? Name { get; set; }
@@ -329,6 +325,7 @@ internal sealed class YamlPresentationFamilyReference
     public string? Variant { get; set; }
 }
 
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used by YamlDotNet reflection deserialization.")]
 internal sealed class YamlProposalCopyItem
 {
     public string? Type { get; set; }
@@ -336,6 +333,7 @@ internal sealed class YamlProposalCopyItem
     public string? Copy { get; set; }
 }
 
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used by YamlDotNet reflection deserialization.")]
 internal sealed class YamlPublicPresentationReference
 {
     public string? Source { get; set; }
@@ -345,6 +343,7 @@ internal sealed class YamlPublicPresentationReference
     public string? PublicId { get; set; }
 }
 
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used by YamlDotNet reflection deserialization.")]
 internal sealed class YamlRelatedContentItem
 {
     public string? Type { get; set; }
@@ -355,3 +354,4 @@ internal sealed class YamlRelatedContentItem
 
     public string? Notes { get; set; }
 }
+
