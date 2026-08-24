@@ -1,60 +1,62 @@
-namespace TalkFolio;
+namespace TalkFolio.Data.YamlFile;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using TalkFolio.Data.YamlFile.Serialization;
+using TalkFolio.Interfaces;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
 /// <summary>
-/// Reads the TalkFolio catalog from a file-based YAML data source.
+/// Reads the TalkFolio catalog from a file-based data source.
 /// </summary>
-public sealed class FileSystemTalkCatalogRepository(
-    IOptions<TalkCatalogRepositoryOptions> options,
-    ILogger<FileSystemTalkCatalogRepository>? logger = null) : ITalkCatalogRepository
+public sealed class TalkCatalogRepository(
+    IOptions<TalkCatalogOptions> options,
+    ILogger<TalkCatalogRepository>? logger = null) : ITalkCatalogRepository
 {
     private static readonly IDeserializer Deserializer = new DeserializerBuilder()
         .IgnoreUnmatchedProperties()
         .Build();
-    private readonly ILogger<FileSystemTalkCatalogRepository> _logger = logger ?? NullLogger<FileSystemTalkCatalogRepository>.Instance;
-    private readonly IOptions<TalkCatalogRepositoryOptions> _options = options ?? throw new ArgumentNullException(nameof(options));
+    private readonly ILogger<TalkCatalogRepository> _logger = logger ?? NullLogger<TalkCatalogRepository>.Instance;
+    private readonly IOptions<TalkCatalogOptions> _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <inheritdoc/>
-    public async Task<TalkCatalog> LoadAsync(CancellationToken cancellationToken = default)
+    public async Task<TalkFolio.Entities.TalkCatalog> LoadAsync(CancellationToken cancellationToken = default)
     {
-        FileSystemTalkCatalogRepositoryLog.LoadingCatalog(_logger);
+        TalkCatalogRepositoryLog.LoadingCatalog(_logger);
 
         var dataRoot = _options.Value.DataRoot;
         if (string.IsNullOrWhiteSpace(dataRoot))
         {
-            FileSystemTalkCatalogRepositoryLog.LoadingCatalogFailedBecauseDataRootNotConfigured(_logger);
+            TalkCatalogRepositoryLog.LoadingCatalogFailedBecauseDataRootNotConfigured(_logger);
             throw new InvalidOperationException("The repository data root is not configured.");
         }
 
         if (!Directory.Exists(dataRoot))
         {
-            FileSystemTalkCatalogRepositoryLog.LoadingCatalogFailedBecauseDataRootDoesNotExist(_logger, dataRoot);
+            TalkCatalogRepositoryLog.LoadingCatalogFailedBecauseDataRootDoesNotExist(_logger, dataRoot);
             throw new DirectoryNotFoundException($"The TalkFolio data root '{dataRoot}' does not exist.");
         }
 
         var talksDirectory = Path.Combine(dataRoot, "talks");
 
-        FileSystemTalkCatalogRepositoryLog.LoadingTalksFrom(_logger, talksDirectory);
+        TalkCatalogRepositoryLog.LoadingTalksFrom(_logger, talksDirectory);
         var talks = await LoadTalksAsync(talksDirectory, cancellationToken).ConfigureAwait(false);
-        FileSystemTalkCatalogRepositoryLog.LoadedCatalog(_logger, talks.Count);
+        TalkCatalogRepositoryLog.LoadedCatalog(_logger, talks.Count);
 
-        return new TalkCatalog(talks);
+        return new TalkFolio.Entities.TalkCatalog(talks);
     }
 
-    private async Task<IReadOnlyList<TalkRecord>> LoadTalksAsync(string talksDirectory, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<TalkFolio.Entities.Talk>> LoadTalksAsync(string talksDirectory, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(talksDirectory))
         {
-            FileSystemTalkCatalogRepositoryLog.TalksDirectoryDoesNotExist(_logger, talksDirectory);
+            TalkCatalogRepositoryLog.TalksDirectoryDoesNotExist(_logger, talksDirectory);
             return [];
         }
 
-        var talks = new List<TalkRecord>();
+        var talks = new List<TalkFolio.Entities.Talk>();
         var seenTalkIds = new Dictionary<Guid, string>();
         var seenTitleVariants = new Dictionary<TalkTitleVariantKey, string>();
         var files = Directory.EnumerateFiles(talksDirectory, "*.*", SearchOption.TopDirectoryOnly)
@@ -64,16 +66,23 @@ public sealed class FileSystemTalkCatalogRepository(
         foreach (var file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            FileSystemTalkCatalogRepositoryLog.ReadingTalkFile(_logger, file);
+            TalkCatalogRepositoryLog.ReadingTalkFile(_logger, file);
             var yaml = await File.ReadAllTextAsync(file, cancellationToken).ConfigureAwait(false);
             var payload = DeserializeTalk(yaml, file);
 
-            FileSystemTalkCatalogRepositoryLog.DeserializedTalkPayload(_logger, payload.Id, payload.Title, file);
+            TalkCatalogRepositoryLog.DeserializedTalkPayload(_logger, payload.Id, payload.Title, file);
+
+            if (payload.Id == Guid.Empty)
+            {
+                var missingTalkIdException = MissingTalkIdException.ForFilePath(file);
+                TalkCatalogRepositoryLog.TalkFileMissingRequiredId(_logger, missingTalkIdException, file);
+                throw missingTalkIdException;
+            }
 
             if (seenTalkIds.TryGetValue(payload.Id, out var firstTalkIdFilePath))
             {
                 var duplicateIdException = new DuplicateTalkIdException(payload.Id, firstTalkIdFilePath, file);
-                FileSystemTalkCatalogRepositoryLog.DuplicateTalkId(
+                TalkCatalogRepositoryLog.DuplicateTalkId(
                     _logger,
                     duplicateIdException,
                     payload.Id,
@@ -91,7 +100,7 @@ public sealed class FileSystemTalkCatalogRepository(
                     variant,
                     firstTitleVariantFilePath,
                     file);
-                FileSystemTalkCatalogRepositoryLog.DuplicateTalkTitleVariant(
+                TalkCatalogRepositoryLog.DuplicateTalkTitleVariant(
                     _logger,
                     duplicateTitleVariantException,
                     payload.Title,
@@ -104,15 +113,15 @@ public sealed class FileSystemTalkCatalogRepository(
             seenTalkIds.Add(payload.Id, file);
             seenTitleVariants.Add(titleVariantKey, file);
             talks.Add(MapTalk(payload));
-            FileSystemTalkCatalogRepositoryLog.MappedTalkRecord(_logger, payload.Id, file);
+            TalkCatalogRepositoryLog.MappedTalk(_logger, payload.Id, file);
         }
 
         return talks.AsReadOnly();
     }
 
-    private static TalkRecord MapTalk(YamlTalkRecord source)
+    private static TalkFolio.Entities.Talk MapTalk(TalkRecord source)
     {
-        return new TalkRecord(
+        return new TalkFolio.Entities.Talk(
             Id: source.Id,
             Title: source.Title,
             AlternateTitles: source.AlternateTitles ?? [],
@@ -120,20 +129,20 @@ public sealed class FileSystemTalkCatalogRepository(
             Tags: source.Tags ?? [],
             LifecycleStatus: source.LifecycleStatus ?? string.Empty,
             TargetAudience: source.TargetAudience ?? [],
-            PresentationFamily: source.PresentationFamily is null ? null : new PresentationFamilyReference(
+            PresentationFamily: source.PresentationFamily is null ? null : new TalkFolio.Entities.PresentationFamily(
                 source.PresentationFamily.Name ?? string.Empty,
                 source.PresentationFamily.Variant ?? string.Empty),
             SlideDeckIds: source.SlideDeckIds ?? [],
             ProposalCopyItems: source.ProposalCopyItems is null
                 ? []
                 : source.ProposalCopyItems
-                    .Select(static item => new ProposalCopyItem(item.Type ?? string.Empty, item.Copy ?? string.Empty))
+                    .Select(static item => new TalkFolio.Entities.ProposalCopyItem(item.Type ?? string.Empty, item.Copy ?? string.Empty))
                     .ToList()
                     .AsReadOnly(),
             PublicPresentationReferences: source.PublicPresentationReferences is null
                 ? []
                 : source.PublicPresentationReferences
-                    .Select(static item => new PublicPresentationReference(
+                    .Select(static item => new TalkFolio.Entities.PublicPresentationReference(
                         item.Source ?? string.Empty,
                         item.Url,
                         item.PublicId))
@@ -142,7 +151,7 @@ public sealed class FileSystemTalkCatalogRepository(
             RelatedContent: source.RelatedContent is null
                 ? []
                 : source.RelatedContent
-                    .Select(static item => new RelatedContentItem(
+                    .Select(static item => new TalkFolio.Entities.RelatedContentItem(
                         item.Type ?? string.Empty,
                         item.Title ?? string.Empty,
                         item.Url,
@@ -155,23 +164,23 @@ public sealed class FileSystemTalkCatalogRepository(
             UpdatedAt: source.UpdatedAt);
     }
 
-    private YamlTalkRecord DeserializeTalk(string yaml, string filePath)
+    private TalkRecord DeserializeTalk(string yaml, string filePath)
     {
         try
         {
-            return Deserializer.Deserialize<YamlTalkRecord>(yaml)
+            return Deserializer.Deserialize<TalkRecord>(yaml)
                 ?? throw new InvalidOperationException($"Talk YAML file '{filePath}' did not produce a talk record.");
         }
         catch (YamlException ex)
         {
             var malformedTalkYamlException = MalformedTalkYamlException.ForFilePath(filePath, ex);
-            FileSystemTalkCatalogRepositoryLog.TalkFileMalformed(_logger, malformedTalkYamlException, filePath);
+            TalkCatalogRepositoryLog.TalkFileMalformed(_logger, malformedTalkYamlException, filePath);
             throw malformedTalkYamlException;
         }
         catch (InvalidOperationException ex)
         {
             var malformedTalkYamlException = MalformedTalkYamlException.ForFilePath(filePath, ex);
-            FileSystemTalkCatalogRepositoryLog.TalkFileCouldNotBeDeserialized(_logger, malformedTalkYamlException, filePath);
+            TalkCatalogRepositoryLog.TalkFileCouldNotBeDeserialized(_logger, malformedTalkYamlException, filePath);
             throw malformedTalkYamlException;
         }
     }

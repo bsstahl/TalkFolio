@@ -1,4 +1,4 @@
-namespace TalkFolio;
+namespace TalkFolio.Entities;
 
 /// <summary>
 /// Represents typed proposal copy attached to a talk.

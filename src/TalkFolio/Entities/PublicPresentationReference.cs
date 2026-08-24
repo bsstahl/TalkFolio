@@ -1,4 +1,4 @@
-namespace TalkFolio;
+namespace TalkFolio.Entities;
 
 /// <summary>
 /// Represents a public presentation reference for a talk.

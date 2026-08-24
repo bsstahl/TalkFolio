@@ -288,8 +288,6 @@ Demonstrates naming, structure, generics, primary constructors, nullable annotat
 ```csharp
 namespace Company.Project.Widgets;
 
-using ItemCache = Dictionary<string, object>;
-
 /// <summary>Defines folding behavior for widgets.</summary>
 public interface IWidget
 {

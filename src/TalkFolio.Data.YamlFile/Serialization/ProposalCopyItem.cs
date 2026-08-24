@@ -1,14 +1,14 @@
-namespace TalkFolio;
+namespace TalkFolio.Data.YamlFile.Serialization;
 
 using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
-/// Raw YAML projection of presentation family data.
+/// Raw projection of proposal copy item data.
 /// </summary>
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used by YamlDotNet reflection deserialization.")]
-internal sealed class YamlPresentationFamilyReference
+internal sealed class ProposalCopyItem
 {
-    public string? Name { get; set; }
+    public string? Type { get; set; }
 
-    public string? Variant { get; set; }
+    public string? Copy { get; set; }
 }

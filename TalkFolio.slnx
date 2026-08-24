@@ -1,6 +1,11 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/TalkFolio.Tests/TalkFolio.Tests.csproj" />
     <Project Path="src/TalkFolio/TalkFolio.csproj" />
+    <Project Path="src/TalkFolio.Api/TalkFolio.Api.csproj" />
+    <Project Path="src/TalkFolio.Data.YamlFile/TalkFolio.Data.YamlFile.csproj" />
+  </Folder>
+  <Folder Name="/tst/">
+    <Project Path="tst/TalkFolio.Tests/TalkFolio.Tests.csproj" />
+    <Project Path="tst/TalkFolio.Data.YamlFile.Tests/TalkFolio.Data.YamlFile.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,14 +1,15 @@
-namespace TalkFolio.Tests;
+namespace TalkFolio.Data.YamlFile.Tests;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TalkFolio.Data.YamlFile;
 using NSubstitute;
 
-public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposable
+public sealed class TalkCatalogRepository_LoadAsync_Should : IDisposable
 {
     private readonly string _dataRoot;
 
-    public FileSystemTalkCatalogRepository_LoadAsync_Should()
+    public TalkCatalogRepository_LoadAsync_Should()
     {
         _dataRoot = Path.Combine(Path.GetTempPath(), $"talkfolio-tests-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_dataRoot);
@@ -19,8 +20,8 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
     {
         // Arrange
         var repositoryRoot = await CreateRepositoryRoot();
-        var target = new FileSystemTalkCatalogRepository(
-            Options.Create(new TalkCatalogRepositoryOptions
+        var target = new TalkCatalogRepository(
+            Options.Create(new TalkCatalogOptions
             {
                 DataRoot = repositoryRoot,
             }));
@@ -57,6 +58,49 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         Assert.Equal("SlideFed", publicPresentation.Source);
         Assert.Equal("https://example.com/presentation/great-cornholio-tp", publicPresentation.Url);
         Assert.Equal("great-cornholio-tp", publicPresentation.PublicId);
+    }
+
+    [Fact]
+    public async Task ThrowInvalidOperationException_WhenDataRootIsNotConfigured()
+    {
+        var target = new TalkCatalogRepository(Options.Create(new TalkCatalogOptions()));
+
+        var actual = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => target.LoadAsync(CancellationToken.None));
+
+        Assert.Equal("The repository data root is not configured.", actual.Message);
+    }
+
+    [Fact]
+    public async Task ReturnEmptyCatalog_WhenTalksDirectoryIsMissing()
+    {
+        var repositoryRoot = Path.Combine(_dataRoot, "no-talks-directory");
+        Directory.CreateDirectory(repositoryRoot);
+        var target = new TalkCatalogRepository(
+            Options.Create(new TalkCatalogOptions
+            {
+                DataRoot = repositoryRoot,
+            }));
+
+        var actual = await target.LoadAsync(CancellationToken.None);
+
+        Assert.Empty(actual.Talks);
+    }
+
+    [Fact]
+    public async Task ThrowDirectoryNotFoundException_WhenDataRootDoesNotExist()
+    {
+        var repositoryRoot = Path.Combine(_dataRoot, "missing-root");
+        var target = new TalkCatalogRepository(
+            Options.Create(new TalkCatalogOptions
+            {
+                DataRoot = repositoryRoot,
+            }));
+
+        var actual = await Assert.ThrowsAsync<DirectoryNotFoundException>(
+            () => target.LoadAsync(CancellationToken.None));
+
+        Assert.Contains(repositoryRoot, actual.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -100,9 +144,9 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
 
         try
         {
-            var logger = Substitute.For<ILogger<FileSystemTalkCatalogRepository>>();
-            var target = new FileSystemTalkCatalogRepository(
-                Options.Create(new TalkCatalogRepositoryOptions
+            var logger = Substitute.For<ILogger<TalkCatalogRepository>>();
+            var target = new TalkCatalogRepository(
+                Options.Create(new TalkCatalogOptions
                 {
                     DataRoot = repositoryRoot,
                 }),
@@ -166,8 +210,8 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
 
         try
         {
-            var target = new FileSystemTalkCatalogRepository(
-                Options.Create(new TalkCatalogRepositoryOptions
+            var target = new TalkCatalogRepository(
+                Options.Create(new TalkCatalogOptions
                 {
                     DataRoot = repositoryRoot,
                 }));
@@ -218,8 +262,8 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
 
         try
         {
-            var target = new FileSystemTalkCatalogRepository(
-                Options.Create(new TalkCatalogRepositoryOptions
+            var target = new TalkCatalogRepository(
+                Options.Create(new TalkCatalogOptions
                 {
                     DataRoot = repositoryRoot,
                 }));
@@ -242,13 +286,59 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
     }
 
     [Fact]
+    public async Task ThrowMissingTalkIdException_WhenTalkRecordDoesNotSupplyId()
+    {
+        // Arrange
+        var repositoryRoot = Path.Combine(Path.GetTempPath(), $"talkfolio-missing-id-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(repositoryRoot);
+        var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
+        var talkFilePath = Path.Combine(talksDirectory.FullName, "missing-id.yaml");
+
+        await File.WriteAllTextAsync(
+            talkFilePath,
+            """
+            Title: Missing Identifier Talk
+            Category: Leadership & Community
+            Tags:
+              - missing-id
+            PresentationFamily:
+              Name: Missing Identifier Family
+              Variant: Canonical
+            LifecycleStatus: Active
+            """);
+
+        try
+        {
+            var target = new TalkCatalogRepository(
+                Options.Create(new TalkCatalogOptions
+                {
+                    DataRoot = repositoryRoot,
+                }));
+
+            // Act
+            var actual = await Assert.ThrowsAsync<MissingTalkIdException>(
+                () => target.LoadAsync(CancellationToken.None));
+
+            // Assert
+            Assert.Equal(talkFilePath, actual.FilePath);
+        }
+        finally
+        {
+            if (Directory.Exists(repositoryRoot))
+            {
+                Directory.Delete(repositoryRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public async Task EmitBoundaryLogs_WhenLoadingCatalog()
     {
         // Arrange
         var repositoryRoot = await CreateRepositoryRoot();
-        var logger = new CollectingLogger<FileSystemTalkCatalogRepository>();
-        var target = new FileSystemTalkCatalogRepository(
-            Options.Create(new TalkCatalogRepositoryOptions
+        var logger = new CollectingLogger<TalkCatalogRepository>();
+        var target = new TalkCatalogRepository(
+            Options.Create(new TalkCatalogOptions
             {
                 DataRoot = repositoryRoot,
             }),
@@ -361,5 +451,3 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         return repositoryRoot;
     }
 }
-
-
