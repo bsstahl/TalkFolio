@@ -38,14 +38,6 @@ public abstract class TalkCatalogLoadException : Exception
 /// </summary>
 public sealed class MalformedTalkYamlException : TalkCatalogLoadException
 {
-    private MalformedTalkYamlException(string filePath, Exception innerException, bool unused)
-        : base(
-            $"Talk file '{filePath}' contains malformed YAML. Scalar values containing ':' must be quoted, for example: - \"Workshop Edition: TP for Teams\".",
-            innerException)
-    {
-        FilePath = filePath;
-    }
-
     /// <summary>
     /// Initializes a new instance of the <see cref="MalformedTalkYamlException"/> class.
     /// </summary>
@@ -80,12 +72,20 @@ public sealed class MalformedTalkYamlException : TalkCatalogLoadException
     /// <param name="innerException">The parser exception.</param>
     /// <returns>The created exception.</returns>
     public static MalformedTalkYamlException ForFilePath(string filePath, Exception innerException)
-        => new(filePath, innerException, true);
+        => new(BuildMessage(filePath), innerException)
+        {
+            FilePath = filePath,
+        };
 
     /// <summary>
     /// Gets the YAML file path that failed to parse.
     /// </summary>
-    public string FilePath { get; } = string.Empty;
+    public string FilePath { get; private set; } = string.Empty;
+
+    private static string BuildMessage(string filePath)
+    {
+        return $"Talk file '{filePath}' contains malformed YAML. Scalar values containing ':' must be quoted, for example: - \"Workshop Edition: TP for Teams\".";
+    }
 }
 
 /// <summary>
