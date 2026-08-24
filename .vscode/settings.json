@@ -1,6 +1,11 @@
 {
     "chat.tools.terminal.autoApprove": {
         "git checkout": true,
-        "npx markdownlint-cli2": true
+        "npx markdownlint-cli2": true,
+        "git switch": true,
+        "/^dotnet --version$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     }
 }

@@ -39,6 +39,7 @@ Before making changes, read the repo guidance that applies to the work:
 * [.github/instructions/test-methodology.instructions.md](./.github/instructions/test-methodology.instructions.md)
 * [.github/instructions/markdown.instructions.md](./.github/instructions/markdown.instructions.md)
 * [.github/instructions/writing-style.instructions.md](./.github/instructions/writing-style.instructions.md)
+* [.github/instructions/logging.instructions.md](./.github/instructions/logging.instructions.md)
 
 ## Tooling and environment
 
@@ -52,6 +53,14 @@ dotnet test
 ```
 
 At this stage, the repo is still documentation-first; do not assume there is a full implementation or a fully populated CI pipeline. When implementation work begins, keep the project runnable from the repo root with no hidden setup steps.
+
+## Test data conventions
+
+When you add TalkFolio-only test data, keep it aligned to the repository's established Beavis & Butthead / Great Cornholio theme.
+
+Use that theme for fixture talks, related content, sample speakers, and similar repository-local examples whenever it fits naturally. The current baseline example speaker is The Great Cornholio, with talks such as "Finding TP for Your People's Bungholes" and "Identifying Sources of Caffeine."
+
+This convention exists to keep test fixtures recognizable, consistent, and clearly separate from real speaking-catalog content. It applies to repository-local tests and fixtures, not to the product's canonical schema or to external production data sources.
 
 ## Development workflow
 
@@ -78,6 +87,14 @@ Follow the repository test instructions in [.github/instructions/test-methodolog
 ### 4. Keep docs and implementation in sync
 
 This repo is deliberately documentation-heavy. When a change affects a domain decision, schema, or boundary, update the relevant docs alongside the work.
+
+### 5. Follow the logging convention
+
+When adding logging:
+
+* log activity and boundary transitions at informational levels
+* keep payload bodies, record snapshots, and other verbose diagnostics at trace level
+* avoid promoting payload detail to information unless the log message itself describes a meaningful product event rather than the data contents
 
 ## Branching and review expectations
 

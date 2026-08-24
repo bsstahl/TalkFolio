@@ -71,6 +71,25 @@ After the red phase, notify the user to validate the failing test outcome before
 
 Check in work as each phase completes, but do not push to remote until the full TDD cycle is complete and the relevant tests are green.
 
+## Coverage as verification, not as a gate
+
+Use coverage as a verification aid, not as a blanket requirement that replaces the behavior-first workflow.
+
+* Run coverage after the relevant tests are green to confirm that added production code has corresponding test coverage.
+* Prefer coverage for the behavior we just added or changed, not for the entire repository at the expense of focus.
+* If coverage shows code that exists without a meaningful test, that is a signal to re-examine the change rather than to add filler tests.
+* Do not set a repository-wide numeric threshold during early implementation unless the team explicitly chooses one later.
+* Treat coverage as evidence that we did not accidentally add behavior without verification, not as a substitute for a sensible failing test and a focused implementation.
+
+In practice, this means the flow is:
+
+1. Write the failing test for the behavior.
+2. Confirm the red phase fails for the right reason.
+3. Implement only the behavior required by the test.
+4. Re-run the targeted tests until green.
+5. Run coverage for the changed area as a final sanity check.
+6. Keep the coverage review focused on the behavior, not broad, unrelated repo churn.
+
 ## Test Quality
 
 Write tests that are:

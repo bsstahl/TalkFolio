@@ -83,6 +83,16 @@ Examples:
 
 This repo currently emphasizes design and schema direction before implementation. The architecture is intended to be durable enough that code changes can be validated against the documented model and boundary decisions.
 
+### 5. Observability follows the same boundary discipline
+
+TalkFolio's logging should describe activity without exposing verbose payload detail at normal log levels.
+
+* informational logs describe boundary activity, orchestration, and successful cross-layer work
+* trace logs hold payload snapshots, field-level detail, and other verbose diagnostic data
+* warnings and errors should identify failure conditions without dumping full payload bodies unless a deeper trace is explicitly required
+
+This keeps the default signal high while preserving enough detail to debug when trace logging is enabled.
+
 ## Planned system structure
 
 Although the repo does not yet contain the full application, the intended structure should remain aligned to a simple layered design.

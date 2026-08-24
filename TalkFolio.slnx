@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TalkFolio.Tests/TalkFolio.Tests.csproj" />
+    <Project Path="src/TalkFolio/TalkFolio.csproj" />
+  </Folder>
+</Solution>

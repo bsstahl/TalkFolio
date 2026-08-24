@@ -41,15 +41,15 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 
 **Status:** Decided
 
-**Decision:** PresentationFamily remains a separate entity, but the relationship is owned by the Talk:
+**Decision:** The PresentationFamily relationship is owned by the Talk, and the model does not keep a separate family file or family record list:
 
-* Each Talk carries a nested `PresentationFamily` object with `Id` and `Variant` (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`). A talk with no family omits the object.
-* The PresentationFamily entity is just `Id`, `Name`, and `Notes`; it does not list members. Membership is discovered by querying Talks by `PresentationFamily.Id`.
+* Each Talk carries a nested `PresentationFamily` object with `Name` and `Variant` (for example `Canonical`, `ExecutiveOverview`, `Lightning`, `Workshop`). A talk with no family omits the object.
+* The family name acts as the stable identity for the grouping concept; a talk's variant is a per-talk classification within that family.
 * `CanonicalTalkId` is removed. A family is not required to have a canonical talk; when one exists, "canonical" is a `Variant` value on the Talk, not a structural field on the family.
 
-**Rationale:** Single-direction ownership matches the existing Talk → SlideDeckIds reference pattern and avoids duplicated references (Talk → family and family → talks) drifting out of sync. Variant identity belongs to the talk, and canonical status is a classification, not structure. Encapsulating `Id` and `Variant` in one object keeps family membership cohesive rather than flat fields on the Talk root.
+**Rationale:** Single-direction ownership matches the existing Talk → SlideDeckIds pattern and avoids a redundant family entity whose membership list would drift out of sync. The lightweight talk-level object keeps family membership cohesive without needing a second persisted file or membership table. The tradeoff is that family names must be treated as stable identifiers and renamed intentionally when the grouping changes.
 
-**Consequences:** TalkCircuit finds a talk's family members by querying Talks that share its `PresentationFamily.Id`. There is no denormalized member list to maintain.
+**Consequences:** TalkCircuit finds a talk's family members by querying Talks that share the same `PresentationFamily.Name`. There is no denormalized family entity or membership list to maintain.
 
 ## ADR-004: Multi-line text uses `|-` literal blocks
 
@@ -174,3 +174,39 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 **Rationale:** This is the conventional .NET configuration model and keeps the app behavior predictable across local development, deployed environments, and automated tests. It also preserves a clean separation between checked-in defaults, environment-specific deployment values, and test-specific overrides.
 
 **Consequences:** The data root, repository selection, and related runtime settings should all be supplied through the configuration system rather than as hard-coded constants. Bootstrap work must define how the configurable root is supplied and how test repositories are organized, and the product cannot assume that a checked-in repo-local catalog is the default operating mode.
+
+## ADR-014: Boundary activity logs are informational; payload detail is trace-only
+
+**Status:** Decided
+
+**Decision:** TalkFolio logs boundary and activity events at informational levels, while message payload detail is reserved for trace-level logs. This is a required completion rule for all TalkFolio work, not an optional preference.
+
+**Rules:**
+
+* Method entry, method exit, and cross-boundary activity should be logged at `Information` or higher when they represent product-relevant work.
+* Payload content, record field values, and other verbose data snapshots should be logged at `Trace` so they do not appear in normal operation.
+* Diagnostic warnings and failures may use `Warning` or `Error` as appropriate, but they should not duplicate verbose payload bodies at higher levels.
+* The same convention should apply across TalkFolio components so logs remain readable and predictable.
+* Work is not considered complete unless any new or changed logging follows this convention.
+
+**Rationale:** Operational logs should describe what the system is doing without flooding normal output with full payload data. Trace-level payload logging preserves debugging detail when needed while keeping default log volume manageable.
+
+**Consequences:** Implementations must separate activity logs from payload-detail logs. Reviewers should expect informational logs at subsystem boundaries and trace logs for payload snapshots or object-value dumps. Any completed change should be checked against this rule before it is considered done.
+
+## ADR-015: Catalog validation is fail-fast with typed domain load errors
+
+**Status:** Decided
+
+**Decision:** TalkFolio catalog loading now fails fast for invalid talk data, and does not run a warning-and-skip mode.
+
+**Rules:**
+
+* Malformed YAML throws `MalformedTalkYamlException`.
+* Duplicate talk IDs throw `DuplicateTalkIdException`.
+* Duplicate `(Title, PresentationFamily.Variant)` pairs throw `DuplicateTalkTitleVariantException`.
+* These exceptions are logged as load failures and then rethrown so upstream callers can handle each failure type distinctly.
+* Catalog loads only succeed when all talk files satisfy the repository invariants.
+
+**Rationale:** TalkFolio and LiquidVictor should follow the same fail-fast behavior for invalid catalog content. Silent skips can hide data problems and create partial, misleading read models.
+
+**Consequences:** Catalog maintainers must fix invalid files before load can succeed. Upstream callers can choose specific handling by exception type without changing core repository behavior.
