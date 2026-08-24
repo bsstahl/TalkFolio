@@ -13,6 +13,9 @@ public sealed class FileSystemTalkCatalogRepository(
     IOptions<TalkCatalogRepositoryOptions> options,
     ILogger<FileSystemTalkCatalogRepository>? logger = null) : ITalkCatalogRepository
 {
+    private static readonly IDeserializer Deserializer = new DeserializerBuilder()
+        .IgnoreUnmatchedProperties()
+        .Build();
     private readonly ILogger<FileSystemTalkCatalogRepository> _logger = logger ?? NullLogger<FileSystemTalkCatalogRepository>.Instance;
     private readonly IOptions<TalkCatalogRepositoryOptions> _options = options ?? throw new ArgumentNullException(nameof(options));
 
@@ -154,13 +157,9 @@ public sealed class FileSystemTalkCatalogRepository(
 
     private YamlTalkRecord DeserializeTalk(string yaml, string filePath)
     {
-        var deserializer = new DeserializerBuilder()
-            .IgnoreUnmatchedProperties()
-            .Build();
-
         try
         {
-            return deserializer.Deserialize<YamlTalkRecord>(yaml)
+            return Deserializer.Deserialize<YamlTalkRecord>(yaml)
                 ?? throw new InvalidOperationException($"Talk YAML file '{filePath}' did not produce a talk record.");
         }
         catch (YamlException ex)
