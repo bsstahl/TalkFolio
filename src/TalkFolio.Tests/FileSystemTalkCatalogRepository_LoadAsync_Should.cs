@@ -57,33 +57,151 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         Assert.Equal("SlideFed", publicPresentation.Source);
         Assert.Equal("https://example.com/presentation/great-cornholio-tp", publicPresentation.Url);
         Assert.Equal("great-cornholio-tp", publicPresentation.PublicId);
-
     }
 
     [Fact]
-    public async Task IgnoreMalformedYamlFiles_WhenTalkRecordCannotBeDeserialized()
+    public async Task ThrowDuplicateTalkIdException_WhenLaterFilesResolveToSameId()
     {
         // Arrange
-        var repositoryRoot = Path.Combine(Path.GetTempPath(), $"talkfolio-malformed-yaml-{Guid.NewGuid():N}");
+        var repositoryRoot = Path.Combine(Path.GetTempPath(), $"talkfolio-duplicate-ids-{Guid.NewGuid():N}");
         Directory.CreateDirectory(repositoryRoot);
         var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
+        var duplicateId = Guid.Parse("8f9eb83f-05c4-4e30-8e98-f00976f01ca0");
+        var firstFilePath = Path.Combine(talksDirectory.FullName, "a-first-talk.yaml");
+        var duplicateFilePath = Path.Combine(talksDirectory.FullName, "b-second-talk.yaml");
 
         File.WriteAllText(
-            Path.Combine(talksDirectory.FullName, "valid-talk.yaml"),
-            """
-            Id: 12345678-1234-1234-1234-123456789abc
-            Title: Valid Talk
+            firstFilePath,
+            $$"""
+            Id: {{duplicateId}}
+            Title: First Talk
             Category: Leadership & Community
             Tags:
-              - valid
+              - first
             PresentationFamily:
-              Name: Valid Family
+              Name: Duplicate Family
               Variant: Canonical
             LifecycleStatus: Active
             """);
 
         File.WriteAllText(
-            Path.Combine(talksDirectory.FullName, "broken-talk.yaml"),
+            duplicateFilePath,
+            $$"""
+            Id: {{duplicateId}}
+            Title: Second Talk
+            Category: Leadership & Community
+            Tags:
+              - second
+            PresentationFamily:
+              Name: Duplicate Family
+              Variant: Workshop
+            LifecycleStatus: Active
+            """);
+
+        try
+        {
+            var logger = Substitute.For<ILogger<FileSystemTalkCatalogRepository>>();
+            var target = new FileSystemTalkCatalogRepository(
+                Options.Create(new TalkCatalogRepositoryOptions
+                {
+                    DataRoot = repositoryRoot,
+                }),
+                logger);
+
+            // Act
+            var actual = await Assert.ThrowsAsync<DuplicateTalkIdException>(
+                () => target.LoadAsync(CancellationToken.None));
+
+            // Assert
+            Assert.Equal(duplicateId, actual.TalkId);
+            Assert.Equal(firstFilePath, actual.FirstFilePath);
+            Assert.Equal(duplicateFilePath, actual.DuplicateFilePath);
+        }
+        finally
+        {
+            if (Directory.Exists(repositoryRoot))
+            {
+                Directory.Delete(repositoryRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ThrowDuplicateTalkTitleVariantException_WhenLaterFilesResolveToSameTitleAndVariant()
+    {
+        // Arrange
+        var repositoryRoot = Path.Combine(Path.GetTempPath(), $"talkfolio-duplicate-title-variant-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(repositoryRoot);
+        var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
+        var firstFilePath = Path.Combine(talksDirectory.FullName, "a-first-talk.yaml");
+        var duplicateFilePath = Path.Combine(talksDirectory.FullName, "b-second-talk.yaml");
+
+        File.WriteAllText(
+            firstFilePath,
+            """
+            Id: 11111111-1111-1111-1111-111111111111
+            Title: LLMs Under the Hood
+            Category: Leadership & Community
+            Tags:
+              - first
+            PresentationFamily:
+              Name: LLMs Family
+              Variant: Workshop
+            LifecycleStatus: Active
+            """);
+
+        File.WriteAllText(
+            duplicateFilePath,
+            """
+            Id: 22222222-2222-2222-2222-222222222222
+            Title: LLMs Under the Hood
+            Category: Leadership & Community
+            Tags:
+              - second
+            PresentationFamily:
+              Name: LLMs Family
+              Variant: Workshop
+            LifecycleStatus: Active
+            """);
+
+        try
+        {
+            var target = new FileSystemTalkCatalogRepository(
+                Options.Create(new TalkCatalogRepositoryOptions
+                {
+                    DataRoot = repositoryRoot,
+                }));
+
+            // Act
+            var actual = await Assert.ThrowsAsync<DuplicateTalkTitleVariantException>(
+                () => target.LoadAsync(CancellationToken.None));
+
+            // Assert
+            Assert.Equal("LLMs Under the Hood", actual.Title);
+            Assert.Equal("Workshop", actual.Variant);
+            Assert.Equal(firstFilePath, actual.FirstFilePath);
+            Assert.Equal(duplicateFilePath, actual.DuplicateFilePath);
+        }
+        finally
+        {
+            if (Directory.Exists(repositoryRoot))
+            {
+                Directory.Delete(repositoryRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ThrowMalformedTalkYamlException_WhenTalkRecordCannotBeDeserialized()
+    {
+        // Arrange
+        var repositoryRoot = Path.Combine(Path.GetTempPath(), $"talkfolio-malformed-yaml-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(repositoryRoot);
+        var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
+        var malformedFilePath = Path.Combine(talksDirectory.FullName, "broken-talk.yaml");
+
+        File.WriteAllText(
+            malformedFilePath,
             """
             Id: 87654321-4321-4321-4321-cba987654321
             Title: Broken Talk
@@ -100,110 +218,19 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
 
         try
         {
-            var logger = Substitute.For<ILogger<FileSystemTalkCatalogRepository>>();
             var target = new FileSystemTalkCatalogRepository(
                 Options.Create(new TalkCatalogRepositoryOptions
                 {
                     DataRoot = repositoryRoot,
-                }),
-                logger);
+                }));
 
             // Act
-            var actual = await target.LoadAsync(CancellationToken.None);
+            var actual = await Assert.ThrowsAsync<MalformedTalkYamlException>(
+                () => target.LoadAsync(CancellationToken.None));
 
             // Assert
-            var talk = Assert.Single(actual.Talks);
-            Assert.Equal("Valid Talk", talk.Title);
-            Assert.Contains(
-                logger.ReceivedCalls(),
-                static call => call.GetArguments()[0] is LogLevel level
-                    && level == LogLevel.Warning
-                    && call.GetArguments()[2]?.ToString()?.Contains("malformed YAML", StringComparison.Ordinal) == true
-                    && call.GetArguments()[2]?.ToString()?.Contains("quoted", StringComparison.Ordinal) == true);
-        }
-        finally
-        {
-            if (Directory.Exists(repositoryRoot))
-            {
-                Directory.Delete(repositoryRoot, recursive: true);
-            }
-        }
-    }
-
-    [Fact]
-    public async Task SkipDuplicateTalkIds_WhenLaterFilesResolveToSameId()
-    {
-        // Arrange
-        var repositoryRoot = Path.Combine(Path.GetTempPath(), $"talkfolio-duplicate-ids-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(repositoryRoot);
-        var talksDirectory = Directory.CreateDirectory(Path.Combine(repositoryRoot, "talks"));
-        var duplicateId = Guid.Parse("8f9eb83f-05c4-4e30-8e98-f00976f01ca0");
-
-        File.WriteAllText(
-            Path.Combine(talksDirectory.FullName, "a-first-talk.yaml"),
-            $$"""
-            Id: {{duplicateId}}
-            Title: First Talk
-            Category: Leadership & Community
-            Tags:
-              - first
-            PresentationFamily:
-              Name: Duplicate Family
-              Variant: Canonical
-            LifecycleStatus: Active
-            """);
-
-        File.WriteAllText(
-            Path.Combine(talksDirectory.FullName, "b-second-talk.yaml"),
-            $$"""
-            Id: {{duplicateId}}
-            Title: Second Talk
-            Category: Leadership & Community
-            Tags:
-              - second
-            PresentationFamily:
-              Name: Duplicate Family
-              Variant: Workshop
-            LifecycleStatus: Active
-            """);
-
-        File.WriteAllText(
-            Path.Combine(talksDirectory.FullName, "c-third-talk.yaml"),
-            $$"""
-            Id: {{duplicateId}}
-            Title: Third Talk
-            Category: Leadership & Community
-            Tags:
-              - third
-            PresentationFamily:
-              Name: Duplicate Family
-              Variant: DeepDive
-            LifecycleStatus: Active
-            """);
-
-        try
-        {
-            var logger = Substitute.For<ILogger<FileSystemTalkCatalogRepository>>();
-            var target = new FileSystemTalkCatalogRepository(
-                Options.Create(new TalkCatalogRepositoryOptions
-                {
-                    DataRoot = repositoryRoot,
-                }),
-                logger);
-
-            // Act
-            var actual = await target.LoadAsync(CancellationToken.None);
-
-            // Assert
-            var talk = Assert.Single(actual.Talks);
-            Assert.Equal(duplicateId, talk.Id);
-            Assert.Equal("First Talk", talk.Title);
-            var duplicateWarnings = logger.ReceivedCalls()
-                .Count(static call => call.GetArguments()[0] is LogLevel level
-                    && level == LogLevel.Warning
-                    && call.GetArguments()[2]?.ToString()?.Contains("duplicate", StringComparison.OrdinalIgnoreCase) == true
-                    && call.GetArguments()[2]?.ToString()?.Contains("TalkId", StringComparison.Ordinal) == true);
-            Assert.Equal(2, duplicateWarnings);
+            Assert.Equal(malformedFilePath, actual.FilePath);
+            Assert.Contains("must be quoted", actual.Message, StringComparison.Ordinal);
         }
         finally
         {

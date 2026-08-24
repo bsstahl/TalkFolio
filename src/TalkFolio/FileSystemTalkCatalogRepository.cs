@@ -75,7 +75,8 @@ public sealed class FileSystemTalkCatalogRepository(
         }
 
         var talks = new List<TalkRecord>();
-        var seenTalkIds = new HashSet<Guid>();
+        var seenTalkIds = new Dictionary<Guid, string>();
+        var seenTitleVariants = new Dictionary<TalkTitleVariantKey, string>();
         var files = Directory.EnumerateFiles(talksDirectory, "*.*", SearchOption.TopDirectoryOnly)
             .Where(static file => file.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))
             .OrderBy(static file => file, StringComparer.OrdinalIgnoreCase);
@@ -85,37 +86,47 @@ public sealed class FileSystemTalkCatalogRepository(
             cancellationToken.ThrowIfCancellationRequested();
             _logger.LogTrace("Reading talk file {FilePath}.", file);
             var yaml = await File.ReadAllTextAsync(file, cancellationToken).ConfigureAwait(false);
-            YamlTalkRecord? payload;
-            try
-            {
-                payload = Deserialize<YamlTalkRecord>(yaml, file);
-            }
-            catch (Exception)
-            {
-                // Handled by Deserialize<T> logging and fallback.
-                payload = null;
-            }
-
-            if (payload is null)
-            {
-                _logger.LogWarning("Skipping talk file {FilePath} because it could not be deserialized. Review the YAML structure and ensure values containing colons are quoted.", file);
-                continue;
-            }
+            var payload = DeserializeTalk(yaml, file);
 
             _logger.LogTrace(
                 "Deserialized talk payload {TalkId} ({TalkTitle}) from {FilePath}.",
                 payload.Id,
                 payload.Title,
                 file);
-            if (!seenTalkIds.Add(payload.Id))
+
+            if (seenTalkIds.TryGetValue(payload.Id, out var firstTalkIdFilePath))
             {
-                _logger.LogWarning(
-                    "Skipping talk file {FilePath} because TalkId {TalkId} duplicates a previously loaded talk record.",
+                var duplicateIdException = new DuplicateTalkIdException(payload.Id, firstTalkIdFilePath, file);
+                _logger.LogError(
+                    duplicateIdException,
+                    "Catalog load failed because duplicate TalkId {TalkId} was found in {DuplicateFilePath}. First seen in {FirstFilePath}.",
+                    payload.Id,
                     file,
-                    payload.Id);
-                continue;
+                    firstTalkIdFilePath);
+                throw duplicateIdException;
             }
 
+            var variant = payload.PresentationFamily?.Variant ?? string.Empty;
+            var titleVariantKey = new TalkTitleVariantKey(payload.Title, variant);
+            if (seenTitleVariants.TryGetValue(titleVariantKey, out var firstTitleVariantFilePath))
+            {
+                var duplicateTitleVariantException = new DuplicateTalkTitleVariantException(
+                    payload.Title,
+                    variant,
+                    firstTitleVariantFilePath,
+                    file);
+                _logger.LogError(
+                    duplicateTitleVariantException,
+                    "Catalog load failed because duplicate talk title and variant were found for Title '{Title}' and Variant '{Variant}' in {DuplicateFilePath}. First seen in {FirstFilePath}.",
+                    payload.Title,
+                    variant,
+                    file,
+                    firstTitleVariantFilePath);
+                throw duplicateTitleVariantException;
+            }
+
+            seenTalkIds.Add(payload.Id, file);
+            seenTitleVariants.Add(titleVariantKey, file);
             talks.Add(MapTalk(payload));
             _logger.LogTrace("Mapped talk record {TalkId} from {FilePath}.", payload.Id, file);
         }
@@ -123,7 +134,7 @@ public sealed class FileSystemTalkCatalogRepository(
         return talks.AsReadOnly();
     }
 
-    private static TalkRecord MapTalk(YamlTalkRecord source)
+    private TalkRecord MapTalk(YamlTalkRecord source)
     {
         return new TalkRecord(
             Id: source.Id,
@@ -168,7 +179,7 @@ public sealed class FileSystemTalkCatalogRepository(
             UpdatedAt: source.UpdatedAt);
     }
 
-    private T? Deserialize<T>(string yaml, string filePath)
+    private YamlTalkRecord DeserializeTalk(string yaml, string filePath)
     {
         var deserializer = new DeserializerBuilder()
             .IgnoreUnmatchedProperties()
@@ -176,19 +187,30 @@ public sealed class FileSystemTalkCatalogRepository(
 
         try
         {
-            return deserializer.Deserialize<T>(yaml);
+            return deserializer.Deserialize<YamlTalkRecord>(yaml)
+                ?? throw new InvalidOperationException($"Talk YAML file '{filePath}' did not produce a talk record.");
         }
         catch (YamlException ex)
         {
-            _logger.LogWarning(ex, "Skipping YAML file {FilePath} because it is malformed YAML. Scalar values containing \":\" must be quoted, for example: - \"Workshop Edition: TP for Teams\".", filePath);
-            return default;
+            var malformedTalkYamlException = new MalformedTalkYamlException(filePath, ex);
+            _logger.LogError(
+                malformedTalkYamlException,
+                "Catalog load failed because talk file {FilePath} contains malformed YAML.",
+                filePath);
+            throw malformedTalkYamlException;
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Skipping YAML file {FilePath} because the payload could not be constructed. Review the YAML structure and ensure values containing colons are quoted.", filePath);
-            return default;
+            var malformedTalkYamlException = new MalformedTalkYamlException(filePath, ex);
+            _logger.LogError(
+                malformedTalkYamlException,
+                "Catalog load failed because talk file {FilePath} could not be deserialized.",
+                filePath);
+            throw malformedTalkYamlException;
         }
     }
+
+    private readonly record struct TalkTitleVariantKey(string Title, string Variant);
 }
 
 /// <summary>

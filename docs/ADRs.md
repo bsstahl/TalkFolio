@@ -192,3 +192,21 @@ This document consolidates the design decisions reached for TalkFolio. Each entr
 **Rationale:** Operational logs should describe what the system is doing without flooding normal output with full payload data. Trace-level payload logging preserves debugging detail when needed while keeping default log volume manageable.
 
 **Consequences:** Implementations must separate activity logs from payload-detail logs. Reviewers should expect informational logs at subsystem boundaries and trace logs for payload snapshots or object-value dumps. Any completed change should be checked against this rule before it is considered done.
+
+## ADR-015: Catalog validation is fail-fast with typed domain load errors
+
+**Status:** Decided
+
+**Decision:** TalkFolio catalog loading now fails fast for invalid talk data, and does not run a warning-and-skip mode.
+
+**Rules:**
+
+* Malformed YAML throws `MalformedTalkYamlException`.
+* Duplicate talk IDs throw `DuplicateTalkIdException`.
+* Duplicate `(Title, PresentationFamily.Variant)` pairs throw `DuplicateTalkTitleVariantException`.
+* These exceptions are logged as load failures and then rethrown so upstream callers can handle each failure type distinctly.
+* Catalog loads only succeed when all talk files satisfy the repository invariants.
+
+**Rationale:** TalkFolio and LiquidVictor should follow the same fail-fast behavior for invalid catalog content. Silent skips can hide data problems and create partial, misleading read models.
+
+**Consequences:** Catalog maintainers must fix invalid files before load can succeed. Upstream callers can choose specific handling by exception type without changing core repository behavior.
