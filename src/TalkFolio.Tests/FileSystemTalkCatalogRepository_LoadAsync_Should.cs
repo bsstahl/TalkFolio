@@ -246,7 +246,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
     {
         // Arrange
         var repositoryRoot = await CreateRepositoryRoot();
-        var logger = Substitute.For<ILogger<FileSystemTalkCatalogRepository>>();
+        var logger = new CollectingLogger<FileSystemTalkCatalogRepository>();
         var target = new FileSystemTalkCatalogRepository(
             Options.Create(new TalkCatalogRepositoryOptions
             {
@@ -258,11 +258,7 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         _ = await target.LoadAsync(CancellationToken.None);
 
         // Assert
-        var levels = logger.ReceivedCalls()
-            .Select(static call => call.GetArguments())
-            .Where(static arguments => arguments.Length > 0 && arguments[0] is LogLevel)
-            .Select(static arguments => (LogLevel)arguments[0]!)
-            .ToList();
+        var levels = logger.Levels;
 
         Assert.Contains(LogLevel.Information, levels);
         Assert.Contains(LogLevel.Trace, levels);
@@ -270,6 +266,41 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         Assert.DoesNotContain(LogLevel.Error, levels);
         Assert.True(levels.Count(level => level == LogLevel.Information) >= 2);
         Assert.True(levels.Count(level => level == LogLevel.Trace) >= 3);
+    }
+
+    private sealed class CollectingLogger<T> : ILogger<T>
+    {
+        public List<LogLevel> Levels { get; } = [];
+
+        public IDisposable BeginScope<TState>(TState state)
+            where TState : notnull
+        {
+            return NullScope.Instance;
+        }
+
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            Levels.Add(logLevel);
+        }
+    }
+
+    private sealed class NullScope : IDisposable
+    {
+        public static NullScope Instance { get; } = new();
+
+        public void Dispose()
+        {
+        }
     }
 
     public void Dispose()
@@ -330,7 +361,5 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         return repositoryRoot;
     }
 }
-
-
 
 
