@@ -2,7 +2,7 @@ namespace TalkFolio.Data.YamlFile;
 
 using Microsoft.Extensions.Logging;
 
-internal static partial class FileSystemTalkCatalogRepositoryLog
+internal static partial class TalkCatalogRepositoryLog
 {
     [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Loading TalkFolio catalog.")]
     public static partial void LoadingCatalog(ILogger logger);
@@ -28,8 +28,8 @@ internal static partial class FileSystemTalkCatalogRepositoryLog
     [LoggerMessage(EventId = 8, Level = LogLevel.Trace, Message = "Deserialized talk payload {TalkId} ({TalkTitle}) from {FilePath}.")]
     public static partial void DeserializedTalkPayload(ILogger logger, Guid talkId, string talkTitle, string filePath);
 
-    [LoggerMessage(EventId = 9, Level = LogLevel.Trace, Message = "Mapped talk record {TalkId} from {FilePath}.")]
-    public static partial void MappedTalkRecord(ILogger logger, Guid talkId, string filePath);
+    [LoggerMessage(EventId = 9, Level = LogLevel.Trace, Message = "Mapped talk {TalkId} from {FilePath}.")]
+    public static partial void MappedTalk(ILogger logger, Guid talkId, string filePath);
 
     [LoggerMessage(EventId = 10, Level = LogLevel.Error, Message = "Catalog load failed because talk file {FilePath} contains malformed YAML.")]
     public static partial void TalkFileMalformed(ILogger logger, Exception exception, string filePath);

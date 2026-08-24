@@ -3,12 +3,14 @@ namespace TalkFolio.Data.YamlFile;
 using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
-/// Raw YAML projection of proposal copy item data.
+/// Raw projection of a public presentation reference.
 /// </summary>
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used by YamlDotNet reflection deserialization.")]
-internal sealed class YamlProposalCopyItem
+internal sealed class PublicPresentationReference
 {
-    public string? Type { get; set; }
+    public string? Source { get; set; }
 
-    public string? Copy { get; set; }
+    public string? Url { get; set; }
+
+    public string? PublicId { get; set; }
 }

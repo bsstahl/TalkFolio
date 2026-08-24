@@ -11,10 +11,10 @@ public partial class Program
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Services
-            .AddOptions<TalkCatalogRepositoryOptions>()
-            .BindConfiguration("TalkCatalogRepository");
+            .AddOptions<TalkCatalogOptions>()
+            .BindConfiguration("TalkCatalog");
 
-        builder.Services.AddSingleton<ITalkCatalogRepository, FileSystemTalkCatalogRepository>();
+        builder.Services.AddSingleton<ITalkCatalogRepository, TalkCatalogRepository>();
 
         var app = builder.Build();
 

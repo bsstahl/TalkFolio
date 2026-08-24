@@ -27,7 +27,7 @@ public sealed class TalksEndpoint_GetTalks_Should : IDisposable
             {
                 configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["TalkCatalogRepository:DataRoot"] = repositoryRoot,
+                    ["TalkCatalog:DataRoot"] = repositoryRoot,
                 });
             });
         });

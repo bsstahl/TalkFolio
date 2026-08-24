@@ -1,9 +1,9 @@
 namespace TalkFolio.Data.YamlFile;
 
 /// <summary>
-/// Configures the file-backed repository used to read TalkFolio data.
+/// Configures the repository used to read TalkFolio data.
 /// </summary>
-public sealed class TalkCatalogRepositoryOptions
+public sealed class TalkCatalogOptions
 {
     /// <summary>
     /// Gets or sets the root directory that contains the repository data.

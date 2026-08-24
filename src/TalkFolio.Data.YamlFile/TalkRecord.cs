@@ -3,10 +3,10 @@ namespace TalkFolio.Data.YamlFile;
 using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
-/// Raw YAML projection for a talk record.
+/// Raw projection for a talk record.
 /// </summary>
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used by YamlDotNet reflection deserialization.")]
-internal sealed class YamlTalkRecord
+internal sealed class TalkRecord
 {
     public Guid Id { get; set; }
 
@@ -18,7 +18,7 @@ internal sealed class YamlTalkRecord
 
     public List<string>? Tags { get; set; }
 
-    public YamlPresentationFamilyReference? PresentationFamily { get; set; }
+    public PresentationFamilyReference? PresentationFamily { get; set; }
 
     public string? LifecycleStatus { get; set; }
 
@@ -28,11 +28,11 @@ internal sealed class YamlTalkRecord
 
     public List<Guid>? SlideDeckIds { get; set; }
 
-    public List<YamlProposalCopyItem>? ProposalCopyItems { get; set; }
+    public List<ProposalCopyItem>? ProposalCopyItems { get; set; }
 
-    public List<YamlPublicPresentationReference>? PublicPresentationReferences { get; set; }
+    public List<PublicPresentationReference>? PublicPresentationReferences { get; set; }
 
-    public List<YamlRelatedContentItem>? RelatedContent { get; set; }
+    public List<RelatedContentItem>? RelatedContent { get; set; }
 
     public string? IdeationNotes { get; set; }
 

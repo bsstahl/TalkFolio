@@ -5,11 +5,11 @@ using Microsoft.Extensions.Options;
 using TalkFolio.Data.YamlFile;
 using NSubstitute;
 
-public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposable
+public sealed class TalkCatalogRepository_LoadAsync_Should : IDisposable
 {
     private readonly string _dataRoot;
 
-    public FileSystemTalkCatalogRepository_LoadAsync_Should()
+    public TalkCatalogRepository_LoadAsync_Should()
     {
         _dataRoot = Path.Combine(Path.GetTempPath(), $"talkfolio-tests-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_dataRoot);
@@ -20,8 +20,8 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
     {
         // Arrange
         var repositoryRoot = await CreateRepositoryRoot();
-        var target = new FileSystemTalkCatalogRepository(
-            Options.Create(new TalkCatalogRepositoryOptions
+        var target = new TalkCatalogRepository(
+            Options.Create(new TalkCatalogOptions
             {
                 DataRoot = repositoryRoot,
             }));
@@ -101,9 +101,9 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
 
         try
         {
-            var logger = Substitute.For<ILogger<FileSystemTalkCatalogRepository>>();
-            var target = new FileSystemTalkCatalogRepository(
-                Options.Create(new TalkCatalogRepositoryOptions
+            var logger = Substitute.For<ILogger<TalkCatalogRepository>>();
+            var target = new TalkCatalogRepository(
+                Options.Create(new TalkCatalogOptions
                 {
                     DataRoot = repositoryRoot,
                 }),
@@ -167,8 +167,8 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
 
         try
         {
-            var target = new FileSystemTalkCatalogRepository(
-                Options.Create(new TalkCatalogRepositoryOptions
+            var target = new TalkCatalogRepository(
+                Options.Create(new TalkCatalogOptions
                 {
                     DataRoot = repositoryRoot,
                 }));
@@ -219,8 +219,8 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
 
         try
         {
-            var target = new FileSystemTalkCatalogRepository(
-                Options.Create(new TalkCatalogRepositoryOptions
+            var target = new TalkCatalogRepository(
+                Options.Create(new TalkCatalogOptions
                 {
                     DataRoot = repositoryRoot,
                 }));
@@ -247,9 +247,9 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
     {
         // Arrange
         var repositoryRoot = await CreateRepositoryRoot();
-        var logger = new CollectingLogger<FileSystemTalkCatalogRepository>();
-        var target = new FileSystemTalkCatalogRepository(
-            Options.Create(new TalkCatalogRepositoryOptions
+        var logger = new CollectingLogger<TalkCatalogRepository>();
+        var target = new TalkCatalogRepository(
+            Options.Create(new TalkCatalogOptions
             {
                 DataRoot = repositoryRoot,
             }),
@@ -362,5 +362,4 @@ public sealed class FileSystemTalkCatalogRepository_LoadAsync_Should : IDisposab
         return repositoryRoot;
     }
 }
-
 
